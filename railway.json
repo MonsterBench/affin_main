@@ -5,7 +5,7 @@
   },
   "deploy": {
     "startCommand": "npm run start",
-    "preDeployCommand": "npx prisma db push --skip-generate --accept-data-loss",
+    "preDeployCommand": "node scripts/set-db-provider.mjs && npx prisma db push --skip-generate --accept-data-loss",
     "healthcheckPath": "/",
     "healthcheckTimeout": 120,
     "restartPolicyType": "ON_FAILURE",
