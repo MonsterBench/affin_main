@@ -71,7 +71,9 @@ function ComposeModal({
 }) {
   const [mode, setMode] = useState<"existing" | "new">(recipients.length ? "existing" : "new");
   const [search, setSearch] = useState("");
-  const [recipientId, setRecipientId] = useState(recipients[0]?.id ?? "");
+  const [selected, setSelected] = useState<string[]>(recipients[0] ? [recipients[0].id] : []);
+  const toggle = (id: string) =>
+    setSelected((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
   // New-recipient fields.
   const [nr, setNr] = useState({ firstName: "", lastName: "", address1: "", city: "", state: "", zip: "" });
 
@@ -88,7 +90,7 @@ function ComposeModal({
     [recipients, search],
   );
   const selectedGift = CATALOG.find((p) => p.id === giftId)!;
-  const firstName = mode === "new" ? nr.firstName : recipients.find((r) => r.id === recipientId)?.firstName ?? "";
+  const firstName = mode === "new" ? nr.firstName : recipients.find((r) => r.id === selected[0])?.firstName ?? "";
 
   async function writeWithAI() {
     setAiBusy(true);
@@ -108,33 +110,39 @@ function ComposeModal({
   async function submit() {
     setError(null);
 
-    // Resolve recipient (create one inline if sending to someone new).
-    let targetId = recipientId;
     if (mode === "new") {
       if (!nr.firstName || !nr.lastName) return setError("Enter the recipient's name.");
       if (!nr.address1 || !nr.city || !nr.state || !nr.zip) return setError("A full mailing address is required.");
-    } else if (!targetId) {
-      return setError("Choose a recipient.");
+    } else if (selected.length === 0) {
+      return setError("Choose at least one recipient.");
     }
 
     setSaving(true);
     try {
       if (mode === "new") {
+        // Create the new recipient inline, then schedule the gift.
         const res = await fetch("/api/recipients", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ...nr, audience: "client", importantDates: occasion && scheduledFor ? [{ occasion, date: scheduledFor }] : [] }),
         });
         if (!res.ok) throw new Error("Could not save the recipient.");
-        targetId = (await res.json()).id;
+        const newId = (await res.json()).id;
+        const send = await fetch("/api/sends", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ recipientId: newId, giftId, occasion, scheduledFor, note }),
+        });
+        if (!send.ok) throw new Error("Could not schedule the gift.");
+      } else {
+        // Bulk endpoint handles one or many recipients.
+        const res = await fetch("/api/sends/bulk", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ recipientIds: selected, giftId, occasion, scheduledFor, note }),
+        });
+        if (!res.ok) throw new Error("Could not schedule the gifts.");
       }
-
-      const res = await fetch("/api/sends", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ recipientId: targetId, giftId, occasion, scheduledFor, note }),
-      });
-      if (!res.ok) throw new Error("Could not schedule the gift.");
       onDone();
     } catch (e) {
       setSaving(false);
@@ -148,7 +156,12 @@ function ComposeModal({
         {/* 1. Recipient */}
         <section>
           <div className="mb-2 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-pine-800">1 · Who is it for?</h3>
+            <h3 className="text-sm font-semibold text-pine-800">
+              1 · Who is it for?
+              {mode === "existing" && selected.length > 0 && (
+                <span className="ml-2 font-normal text-pine-500">{selected.length} selected</span>
+              )}
+            </h3>
             <button
               onClick={() => setMode(mode === "existing" ? "new" : "existing")}
               className="text-xs font-semibold text-pine-600 hover:underline"
@@ -171,16 +184,16 @@ function ComposeModal({
                 {filtered.map((r) => (
                   <button
                     key={r.id}
-                    onClick={() => setRecipientId(r.id)}
+                    onClick={() => toggle(r.id)}
                     className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left transition ${
-                      recipientId === r.id ? "border-pine-600 bg-pine-50" : "border-pine-100 hover:bg-cream/60"
+                      selected.includes(r.id) ? "border-pine-600 bg-pine-50" : "border-pine-100 hover:bg-cream/60"
                     }`}
                   >
                     <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-pine-100 text-xs font-semibold text-pine-700">
                       {initials(r.name.split(" ")[0] ?? "", r.name.split(" ")[1] ?? "")}
                     </span>
                     <span className="truncate text-sm text-pine-800">{r.name}</span>
-                    {recipientId === r.id && <span className="ml-auto text-pine-600">✓</span>}
+                    {selected.includes(r.id) && <span className="ml-auto text-pine-600">✓</span>}
                   </button>
                 ))}
                 {filtered.length === 0 && <p className="px-1 py-3 text-sm text-pine-400">No matches.</p>}
@@ -273,7 +286,11 @@ function ComposeModal({
               disabled={saving}
               className="rounded-full bg-pine-700 px-5 py-2 text-sm font-semibold text-cream transition hover:bg-pine-600 disabled:opacity-60"
             >
-              {saving ? "Scheduling…" : "Schedule gift"}
+              {saving
+                ? "Scheduling…"
+                : mode === "existing" && selected.length > 1
+                  ? `Schedule ${selected.length} gifts`
+                  : "Schedule gift"}
             </button>
           </div>
         </div>
