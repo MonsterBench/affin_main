@@ -27,7 +27,7 @@ export async function POST() {
     }
     const addr = check.normalized ?? s.recipient;
     const address2 = addr.address2 ?? "";
-    await submitHandwriting({
+    const result = await submitHandwriting({
       sendId: s.id,
       recipientName: `${s.recipient.firstName} ${s.recipient.lastName}`,
       address: formatAddress({ ...addr, address2 }),
@@ -42,6 +42,15 @@ export async function POST() {
       },
       note: s.note,
       style: getProduct(s.giftId)?.category === "letter" ? "santa-script" : "casual-script",
+    });
+    await prisma.send.update({
+      where: { id: s.id },
+      data: {
+        fulfillProvider: result.provider,
+        fulfillJobId: result.jobId,
+        fulfillStatus: result.status,
+        dispatchedAt: new Date(),
+      },
     });
     await applySendAction(userId, s.id, "advance");
     sent++;
