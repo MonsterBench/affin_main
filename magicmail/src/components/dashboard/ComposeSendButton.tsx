@@ -15,16 +15,24 @@ interface RecipientLite {
 
 // One unified, guided "send a gift" flow: pick (or add) a recipient, choose a
 // gift visually, write a note (AI-assisted), and schedule — all in one place.
+export interface ComposePreset {
+  recipientId?: string;
+  occasion?: OccasionType;
+  giftId?: string;
+}
+
 export function ComposeSendButton({
   recipients,
   label = "Send a gift",
   variant = "primary",
   className = "",
+  preset,
 }: {
   recipients: RecipientLite[];
   label?: string;
   variant?: "primary" | "ghost";
   className?: string;
+  preset?: ComposePreset;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -43,6 +51,7 @@ export function ComposeSendButton({
       {open && (
         <ComposeModal
           recipients={recipients}
+          preset={preset}
           onClose={() => setOpen(false)}
           onDone={() => {
             setOpen(false);
@@ -62,23 +71,32 @@ function todayPlus(days: number): string {
 
 function ComposeModal({
   recipients,
+  preset,
   onClose,
   onDone,
 }: {
   recipients: RecipientLite[];
+  preset?: ComposePreset;
   onClose: () => void;
   onDone: () => void;
 }) {
   const [mode, setMode] = useState<"existing" | "new">(recipients.length ? "existing" : "new");
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<string[]>(recipients[0] ? [recipients[0].id] : []);
+  const presetRecipient = preset?.recipientId && recipients.some((r) => r.id === preset.recipientId)
+    ? preset.recipientId
+    : recipients[0]?.id;
+  const [selected, setSelected] = useState<string[]>(presetRecipient ? [presetRecipient] : []);
   const toggle = (id: string) =>
     setSelected((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
   // New-recipient fields.
   const [nr, setNr] = useState({ firstName: "", lastName: "", address1: "", city: "", state: "", zip: "" });
 
-  const [giftId, setGiftId] = useState(CATALOG.find((p) => p.popular)?.id ?? CATALOG[0].id);
-  const [occasion, setOccasion] = useState<OccasionType>("just_because");
+  const [giftId, setGiftId] = useState(
+    preset?.giftId && CATALOG.some((p) => p.id === preset.giftId)
+      ? preset.giftId
+      : CATALOG.find((p) => p.popular)?.id ?? CATALOG[0].id,
+  );
+  const [occasion, setOccasion] = useState<OccasionType>(preset?.occasion ?? "just_because");
   const [scheduledFor, setScheduledFor] = useState(todayPlus(2));
   const [note, setNote] = useState("");
   const [aiBusy, setAiBusy] = useState(false);

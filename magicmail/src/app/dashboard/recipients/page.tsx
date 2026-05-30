@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { AddRecipientButton } from "@/components/dashboard/AddRecipientButton";
@@ -53,7 +54,9 @@ export default async function RecipientsPage() {
                         {initials(r.firstName, r.lastName)}
                       </span>
                       <div className="min-w-0">
-                        <p className="font-medium text-pine-800">{r.firstName} {r.lastName}</p>
+                        <Link href={`/dashboard/recipients/${r.id}`} className="font-medium text-pine-800 hover:underline">
+                          {r.firstName} {r.lastName}
+                        </Link>
                         {r.company && <p className="truncate text-xs text-pine-500">{r.company}</p>}
                       </div>
                     </div>
