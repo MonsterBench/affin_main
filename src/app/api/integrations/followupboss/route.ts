@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { triggerFromEvent, userIdForApiKey, getFubApiKey } from "@/lib/db";
+import { triggerFromEvent, userIdForApiKey, getFubApiKey, logIntegrationEvent } from "@/lib/db";
 import { mapFubEvent, fetchFubResource, type FubContact } from "@/lib/followupboss";
 
 // Native Follow Up Boss webhook receiver.
@@ -61,13 +61,17 @@ export async function POST(req: Request) {
     tags: ["follow-up-boss", "real-estate"],
   });
 
-  return NextResponse.json({
-    ok: true,
-    occasion,
-    scheduled: result.scheduled,
-    message:
-      result.matchedAutomations > 0
-        ? `Scheduled ${result.matchedAutomations} gift(s) from Follow Up Boss.`
-        : "Contact saved. No active automation matched yet.",
+  const message =
+    result.matchedAutomations > 0
+      ? `Scheduled ${result.matchedAutomations} gift(s) from Follow Up Boss.`
+      : "Contact saved. No active automation matched yet.";
+
+  await logIntegrationEvent(userId, {
+    source: "follow-up-boss",
+    event: occasion,
+    summary: `${contact.firstName} ${contact.lastName || ""} — ${message}`.trim(),
+    sendsCreated: result.matchedAutomations,
   });
+
+  return NextResponse.json({ ok: true, occasion, scheduled: result.scheduled, message });
 }

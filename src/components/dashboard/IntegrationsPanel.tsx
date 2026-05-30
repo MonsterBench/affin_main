@@ -1,7 +1,23 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { OCCASION_LABELS } from "@/lib/types";
+
+interface ActivityEvent {
+  id: string;
+  source: string;
+  event: string;
+  summary: string;
+  sendsCreated: number;
+  createdAt: string;
+}
+
+const SOURCE_LABEL: Record<string, string> = {
+  api: "Zapier / API",
+  "follow-up-boss": "Follow Up Boss",
+  zapier: "Zapier",
+};
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -25,13 +41,16 @@ export function IntegrationsPanel({
   fubWebhookUrl,
   deliveryWebhookUrl,
   fubConnected: initialFub,
+  events,
 }: {
   apiKey: string;
   webhookUrl: string;
   fubWebhookUrl: string;
   deliveryWebhookUrl: string;
   fubConnected: boolean;
+  events: ActivityEvent[];
 }) {
+  const router = useRouter();
   const [apiKey, setApiKey] = useState(initialKey);
   const [revealed, setRevealed] = useState(false);
   const [rotating, setRotating] = useState(false);
@@ -60,6 +79,7 @@ export function IntegrationsPanel({
       });
       const d = await res.json().catch(() => ({}));
       setTestResult(res.ok ? d.message ?? "Event received." : d.error ?? "Test failed.");
+      if (res.ok) router.refresh(); // surface it in the activity log below
     } catch {
       setTestResult("Could not reach the webhook.");
     } finally {
@@ -271,6 +291,36 @@ export function IntegrationsPanel({
         <pre className="mt-3 overflow-x-auto rounded-xl bg-ink/90 p-4 text-xs leading-relaxed text-cream">
 {`{ "sendId": "...", "status": "delivered", "trackingNumber": "9400 ..." }`}
         </pre>
+      </div>
+
+      {/* Activity log */}
+      <div className="rounded-2xl border border-pine-100 bg-white p-6 shadow-card">
+        <h2 className="font-display text-lg font-semibold text-pine-800">Recent activity</h2>
+        <p className="mt-1 text-sm text-pine-600/90">The latest events received from your CRM and webhooks.</p>
+        {events.length === 0 ? (
+          <p className="mt-4 rounded-xl bg-pine-50 px-3.5 py-3 text-sm text-pine-500">
+            No events yet. Use “Send test event” above to see one appear here.
+          </p>
+        ) : (
+          <ul className="mt-4 divide-y divide-pine-50">
+            {events.map((e) => (
+              <li key={e.id} className="flex items-center gap-3 py-2.5">
+                <span
+                  className={`h-2 w-2 shrink-0 rounded-full ${e.sendsCreated > 0 ? "bg-emerald-500" : "bg-pine-200"}`}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm text-pine-800">{e.summary}</p>
+                  <p className="text-xs text-pine-500">
+                    {SOURCE_LABEL[e.source] ?? e.source} · {OCCASION_LABELS[e.event as keyof typeof OCCASION_LABELS] ?? e.event}
+                  </p>
+                </div>
+                <time className="shrink-0 text-xs text-pine-400">
+                  {new Date(e.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                </time>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { IntegrationsPanel } from "@/components/dashboard/IntegrationsPanel";
 import { requireUserId } from "@/lib/auth";
-import { getOrCreateApiKey, getFubApiKey } from "@/lib/db";
+import { getOrCreateApiKey, getFubApiKey, listIntegrationEvents } from "@/lib/db";
 import { appUrl } from "@/lib/urls";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +10,11 @@ export const dynamic = "force-dynamic";
 export default async function IntegrationsPage() {
   const userId = await requireUserId();
   if (!userId) redirect("/login");
-  const [apiKey, fubKey] = await Promise.all([getOrCreateApiKey(userId), getFubApiKey(userId)]);
+  const [apiKey, fubKey, events] = await Promise.all([
+    getOrCreateApiKey(userId),
+    getFubApiKey(userId),
+    listIntegrationEvents(userId, 10),
+  ]);
 
   return (
     <>
@@ -24,6 +28,7 @@ export default async function IntegrationsPage() {
         fubWebhookUrl={appUrl(`/api/integrations/followupboss?key=${apiKey}`)}
         deliveryWebhookUrl={appUrl("/api/webhooks/delivery")}
         fubConnected={Boolean(fubKey)}
+        events={events}
       />
     </>
   );

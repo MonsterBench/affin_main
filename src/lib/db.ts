@@ -502,6 +502,47 @@ export async function getFubApiKey(userId: string): Promise<string | null> {
   return u?.fubApiKey ?? null;
 }
 
+// ---- Integration activity log --------------------------------------------
+export async function logIntegrationEvent(
+  userId: string,
+  input: { source: string; event: string; summary: string; sendsCreated?: number },
+): Promise<void> {
+  await prisma.integrationEvent.create({
+    data: {
+      userId,
+      source: input.source,
+      event: input.event,
+      summary: input.summary,
+      sendsCreated: input.sendsCreated ?? 0,
+    },
+  });
+}
+
+export interface IntegrationEventRow {
+  id: string;
+  source: string;
+  event: string;
+  summary: string;
+  sendsCreated: number;
+  createdAt: string;
+}
+
+export async function listIntegrationEvents(userId: string, limit = 10): Promise<IntegrationEventRow[]> {
+  const rows = await prisma.integrationEvent.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    source: r.source,
+    event: r.event,
+    summary: r.summary,
+    sendsCreated: r.sendsCreated,
+    createdAt: r.createdAt.toISOString(),
+  }));
+}
+
 // Provider delivery/tracking callback → update a send's status. Returns the
 // owner's email so the caller can notify them.
 export async function updateDeliveryStatus(
