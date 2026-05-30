@@ -12,6 +12,7 @@ const NAV = [
   { href: "/dashboard/sends", label: "Pipeline" },
   { href: "/dashboard/fulfillment", label: "Fulfillment" },
   { href: "/dashboard/catalog", label: "Catalog" },
+  { href: "/dashboard/reports", label: "Reports" },
   { href: "/dashboard/integrations", label: "Integrations" },
   { href: "/dashboard/billing", label: "Billing" },
 ];
