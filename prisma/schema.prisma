@@ -113,6 +113,9 @@ model Send {
   reason         String? // why this gift was selected (shown in the touch preview)
   notifiedAt     DateTime? // when the pre-send heads-up email went out
   source         String    @default("app") // app | crm | storefront
+  magicToken     String?   @unique // powers the QR "magic" experience page
+  videoStatus    String    @default("none") // none | requested | ready | failed
+  videoUrl       String?
   automationId   String?
   createdAt      DateTime  @default(now())
 

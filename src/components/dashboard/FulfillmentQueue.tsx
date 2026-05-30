@@ -20,6 +20,7 @@ export interface Order {
   status: SendStatus;
   scheduledFor: string;
   note: string;
+  magicToken?: string;
 }
 
 const PROVIDER_LABEL: Record<string, string> = {
@@ -168,6 +169,16 @@ export function FulfillmentQueue({ orders, provider }: { orders: Order[]; provid
                   {o.note || "— no note —"}
                 </p>
               </div>
+              {o.magicToken && (
+                <div className="flex items-center gap-3 rounded-xl border border-gold-200 bg-gold-100/40 p-2.5">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={`/api/magic/${o.magicToken}/qr`} alt="Magic QR" className="h-14 w-14 rounded bg-white p-1" />
+                  <div className="text-xs text-pine-700">
+                    <p className="font-semibold">✨ Print this QR on the letter</p>
+                    <p className="text-pine-500">Scans to the child&apos;s personalized Santa video.</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="mt-4 flex items-center justify-between gap-3">

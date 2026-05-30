@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "./prisma";
 import { CATALOG, getProduct } from "./catalog";
+import { requestSantaVideo } from "./video";
 import { STATUS_ORDER } from "./types";
 import type {
   AudienceKind,
@@ -711,7 +712,7 @@ export interface GuestOrderInput {
 // Creates a one-off consumer gift order (e.g. a parent buying a single Santa
 // letter). Lives under the internal storefront account and flows through the
 // same fulfillment pipeline as everything else.
-export async function createGuestOrder(input: GuestOrderInput): Promise<string> {
+export async function createGuestOrder(input: GuestOrderInput): Promise<{ sendId: string; magicToken: string }> {
   const userId = await storefrontUserId();
   const recipient = await prisma.recipient.create({
     data: {
@@ -731,6 +732,18 @@ export async function createGuestOrder(input: GuestOrderInput): Promise<string> 
     },
   });
 
+  // Every order gets a QR "magic" experience; Santa letters & holiday gifts also
+  // kick off a personalized Pixar-style Santa video via Sentinel.
+  const magicToken = `mg_${randomToken(20)}`;
+  const wantsVideo = input.giftId.startsWith("santa-letter") || input.occasion === "holiday";
+  let videoStatus = "none";
+  let videoUrl: string | undefined;
+  if (wantsVideo) {
+    const v = await requestSantaVideo({ token: magicToken, childName: input.firstName, script: input.note });
+    videoStatus = v.status;
+    videoUrl = v.url;
+  }
+
   const send = await prisma.send.create({
     data: {
       userId,
@@ -742,7 +755,48 @@ export async function createGuestOrder(input: GuestOrderInput): Promise<string> 
       note: input.note,
       reason: `One-off gift purchased by ${input.buyerEmail}`,
       source: "storefront",
+      magicToken,
+      videoStatus,
+      videoUrl,
     },
   });
-  return send.id;
+  return { sendId: send.id, magicToken };
+}
+
+export interface MagicExperience {
+  childName: string;
+  note: string;
+  giftName: string;
+  videoStatus: string;
+  videoUrl?: string;
+}
+
+export async function getMagicExperience(token: string): Promise<MagicExperience | null> {
+  const send = await prisma.send.findUnique({ where: { magicToken: token }, include: { recipient: true } });
+  if (!send) return null;
+  return {
+    childName: send.recipient.firstName,
+    note: send.note,
+    giftName: getProduct(send.giftId)?.name ?? "a gift",
+    videoStatus: send.videoStatus,
+    videoUrl: send.videoUrl ?? undefined,
+  };
+}
+
+export async function setVideoByToken(token: string, videoUrl: string, status = "ready"): Promise<boolean> {
+  const existing = await prisma.send.findUnique({ where: { magicToken: token } });
+  if (!existing) return false;
+  await prisma.send.update({ where: { magicToken: token }, data: { videoUrl, videoStatus: status } });
+  return true;
+}
+
+// Map of sendId → magicToken for a user's sends (for printing QR codes).
+export async function magicTokensForUser(userId: string): Promise<Record<string, string>> {
+  const rows = await prisma.send.findMany({
+    where: { userId, magicToken: { not: null } },
+    select: { id: true, magicToken: true },
+  });
+  const out: Record<string, string> = {};
+  for (const r of rows) if (r.magicToken) out[r.id] = r.magicToken;
+  return out;
 }
