@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { StatCard } from "@/components/dashboard/StatCard";
+import { RunSchedulerButton } from "@/components/dashboard/RunSchedulerButton";
 import { OccasionBadge, StatusBadge } from "@/components/ui/Badge";
 import { getCurrentUser } from "@/lib/auth";
 import { getProduct } from "@/lib/catalog";
@@ -46,12 +47,15 @@ export default async function OverviewPage() {
         title={`Good to see you, ${firstName} 👋`}
         subtitle="Here's the magic in motion across your accounts."
         action={
-          <Link
-            href="/dashboard/sends"
-            className="rounded-full bg-pine-700 px-4 py-2 text-sm font-semibold text-cream shadow-card transition hover:bg-pine-600"
-          >
-            + New send
-          </Link>
+          <div className="flex items-center gap-2">
+            <RunSchedulerButton />
+            <Link
+              href="/dashboard/sends"
+              className="rounded-full bg-pine-700 px-4 py-2 text-sm font-semibold text-cream shadow-card transition hover:bg-pine-600"
+            >
+              + New send
+            </Link>
+          </div>
         }
       />
 

@@ -483,3 +483,75 @@ function randomToken(len: number): string {
   for (let i = 0; i < len; i++) out += chars[Math.floor(Math.random() * chars.length)];
   return out;
 }
+
+// ---- Consumer storefront (one-off gift purchases) -------------------------
+const STOREFRONT_EMAIL = "storefront@kriskringlemail.com";
+
+async function storefrontUserId(): Promise<string> {
+  const existing = await prisma.user.findUnique({ where: { email: STOREFRONT_EMAIL } });
+  if (existing) return existing.id;
+  const user = await prisma.user.create({
+    data: {
+      email: STOREFRONT_EMAIL,
+      name: "Kris Kringle Mail Storefront",
+      passwordHash: `disabled_${randomToken(24)}`, // no login — internal owner of guest orders
+      plan: "business",
+      emailVerified: true,
+    },
+  });
+  return user.id;
+}
+
+export interface GuestOrderInput {
+  buyerEmail: string;
+  giftId: string;
+  occasion: OccasionType;
+  firstName: string;
+  lastName: string;
+  address1: string;
+  address2?: string;
+  city: string;
+  state: string;
+  zip: string;
+  country?: string;
+  note: string;
+}
+
+// Creates a one-off consumer gift order (e.g. a parent buying a single Santa
+// letter). Lives under the internal storefront account and flows through the
+// same fulfillment pipeline as everything else.
+export async function createGuestOrder(input: GuestOrderInput): Promise<string> {
+  const userId = await storefrontUserId();
+  const recipient = await prisma.recipient.create({
+    data: {
+      userId,
+      firstName: input.firstName,
+      lastName: input.lastName,
+      audience: "family",
+      address1: input.address1,
+      address2: input.address2 ?? "",
+      city: input.city,
+      state: input.state,
+      zip: input.zip,
+      country: input.country || "US",
+      tags: "storefront",
+      notes: `One-off gift purchased by ${input.buyerEmail}`,
+      importantDates: { create: [{ occasion: input.occasion, date: new Date().toISOString().slice(0, 10) }] },
+    },
+  });
+
+  const send = await prisma.send.create({
+    data: {
+      userId,
+      recipientId: recipient.id,
+      giftId: input.giftId,
+      occasion: input.occasion,
+      status: "scheduled",
+      scheduledFor: addDays(new Date().toISOString().slice(0, 10), 2),
+      note: input.note,
+      reason: `One-off gift purchased by ${input.buyerEmail}`,
+      source: "storefront",
+    },
+  });
+  return send.id;
+}

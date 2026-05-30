@@ -16,10 +16,20 @@ export async function POST(_req: Request, ctx: RouteContext<"/api/fulfillment/[i
   const send = await prisma.send.findFirst({ where: { id, userId }, include: { recipient: true } });
   if (!send) return NextResponse.json({ error: "not found" }, { status: 404 });
 
+  const r = send.recipient;
   const result = await submitHandwriting({
     sendId: send.id,
-    recipientName: `${send.recipient.firstName} ${send.recipient.lastName}`,
-    address: formatAddress(send.recipient),
+    recipientName: `${r.firstName} ${r.lastName}`,
+    address: formatAddress(r),
+    recipient: {
+      name: `${r.firstName} ${r.lastName}`,
+      address1: r.address1,
+      address2: r.address2,
+      city: r.city,
+      state: r.state,
+      zip: r.zip,
+      country: r.country,
+    },
     note: send.note,
     style: getProduct(send.giftId)?.category === "letter" ? "santa-script" : "casual-script",
   });

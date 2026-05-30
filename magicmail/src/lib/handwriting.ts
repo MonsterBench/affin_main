@@ -2,31 +2,42 @@ import "server-only";
 
 // Handwriting / auto-pen integration layer.
 //
-// This is the bridge between an AI-written note and a physical handwriting
-// device or service. It's provider-agnostic: pick an adapter based on env.
+// The bridge between an AI-written note and a physical handwriting device or
+// service. Provider-agnostic — pick an adapter via HANDWRITING_PROVIDER:
 //
-//  - "handwrytten": Handwrytten has a real REST API that writes & mails notes
-//     in real ink with robotic pens (https://www.handwrytten.com/handwritten-notes-api).
-//  - "axidraw":     For in-house hardware (AxiDraw / iDraw pen plotters), a small
-//     local agent polls a queue and drives the machine via the CLI/SDK.
+//  - "handwrytten": Handwrytten's REST API writes & mails notes in real ink with
+//     robotic pens (https://www.handwrytten.com/handwritten-notes-api). Fastest
+//     path — no hardware to buy. Configure HANDWRYTTEN_API_KEY (+ optional
+//     HANDWRYTTEN_API_URL / HANDWRYTTEN_CARD_ID / HANDWRYTTEN_FONT_ID).
+//  - "axidraw":     In-house AxiDraw / iDraw pen plotters. A local agent polls the
+//     queue and drives the machine via its CLI/SDK.
 //  - "manual":      Default — queues jobs for an operator to run on the machine.
-//
-// All adapters share the same contract so the rest of the app never changes.
 
 export type HandwritingProvider = "handwrytten" | "axidraw" | "manual";
+
+export interface MailingAddress {
+  name: string;
+  address1: string;
+  address2?: string;
+  city: string;
+  state: string;
+  zip: string;
+  country: string;
+}
 
 export interface HandwritingJob {
   sendId: string;
   recipientName: string;
-  address: string;
+  address: string; // formatted, for operator display
+  recipient?: MailingAddress; // structured, for provider APIs
   note: string;
-  style?: string; // pen/handwriting style id
+  style?: string; // pen / handwriting style id
 }
 
 export interface HandwritingResult {
   jobId: string;
   provider: HandwritingProvider;
-  status: "queued" | "submitted";
+  status: "queued" | "submitted" | "failed";
   message: string;
 }
 
@@ -37,21 +48,59 @@ export function activeProvider(): HandwritingProvider {
   return "manual";
 }
 
-// Submit a note for handwriting. In live mode this would call the provider's
-// API; here it returns a queued job so the operator UI and pipeline work end to
-// end without external hardware.
 export async function submitHandwriting(job: HandwritingJob): Promise<HandwritingResult> {
   const provider = activeProvider();
   const jobId = `hw_${job.sendId}_${Date.now().toString(36)}`;
 
-  if (provider === "handwrytten") {
-    // Example shape — wire to the real Handwrytten API when keys are present.
-    // await fetch("https://api.handwrytten.com/v1/orders", { ... })
-    return { jobId, provider, status: "submitted", message: "Submitted to Handwrytten for robotic handwriting & mailing." };
-  }
+  if (provider === "handwrytten") return submitToHandwrytten(job, jobId);
   if (provider === "axidraw") {
-    // The in-house pen-plotter agent will pick this job up from the queue.
     return { jobId, provider, status: "queued", message: "Queued for the in-house AxiDraw pen plotter." };
   }
   return { jobId, provider, status: "queued", message: "Queued for the operator to run on the auto-pen machine." };
+}
+
+// Live Handwrytten submission. Field names follow their order API; the exact
+// schema can vary by account, so the base URL, card, and font are env-driven and
+// errors are handled gracefully (we never crash a send).
+async function submitToHandwrytten(job: HandwritingJob, jobId: string): Promise<HandwritingResult> {
+  const key = process.env.HANDWRYTTEN_API_KEY!;
+  const base = process.env.HANDWRYTTEN_API_URL || "https://api.handwrytten.com/v1";
+  const r = job.recipient;
+  if (!r) {
+    return { jobId, provider: "handwrytten", status: "failed", message: "Missing structured address." };
+  }
+
+  try {
+    const res = await fetch(`${base}/orders`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        card_id: process.env.HANDWRYTTEN_CARD_ID,
+        font_id: process.env.HANDWRYTTEN_FONT_ID,
+        message: job.note,
+        recipient: {
+          name: r.name,
+          address1: r.address1,
+          address2: r.address2 ?? "",
+          city: r.city,
+          state: r.state,
+          zip: r.zip,
+          country: r.country || "US",
+        },
+      }),
+    });
+    if (!res.ok) {
+      return { jobId, provider: "handwrytten", status: "failed", message: `Handwrytten error ${res.status}.` };
+    }
+    const data = await res.json().catch(() => ({}));
+    const orderId = data?.order_id ?? data?.id ?? jobId;
+    return {
+      jobId: String(orderId),
+      provider: "handwrytten",
+      status: "submitted",
+      message: "Submitted to Handwrytten for robotic handwriting & mailing.",
+    };
+  } catch {
+    return { jobId, provider: "handwrytten", status: "failed", message: "Could not reach Handwrytten." };
+  }
 }
