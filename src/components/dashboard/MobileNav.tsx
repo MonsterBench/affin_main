@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "@/components/Logo";
+import { ComposeSendButton } from "@/components/dashboard/ComposeSendButton";
 import { logoutAction } from "@/app/actions/auth";
 
 const NAV = [
@@ -17,17 +18,26 @@ const NAV = [
   { href: "/dashboard/billing", label: "Billing" },
 ];
 
-export function MobileNav({ userName }: { userName: string }) {
+export function MobileNav({
+  userName,
+  recipients,
+}: {
+  userName: string;
+  recipients: { id: string; name: string; firstName: string }[];
+}) {
   const pathname = usePathname();
   return (
     <div className="border-b hairline bg-white px-4 py-3 lg:hidden">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <Logo />
-        <form action={logoutAction}>
-          <button className="text-xs font-medium text-pine-500" title={userName}>
-            Sign out
-          </button>
-        </form>
+        <div className="flex items-center gap-3">
+          <ComposeSendButton recipients={recipients} label="Send" />
+          <form action={logoutAction}>
+            <button className="text-xs font-medium text-pine-500" title={userName}>
+              Sign out
+            </button>
+          </form>
+        </div>
       </div>
       <nav className="mt-3 flex gap-2 overflow-x-auto pb-1">
         {NAV.map((item) => {

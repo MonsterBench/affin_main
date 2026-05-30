@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "@/components/Logo";
+import { ComposeSendButton } from "@/components/dashboard/ComposeSendButton";
 import { logoutAction } from "@/app/actions/auth";
 
 const NAV = [
@@ -27,10 +28,12 @@ export function Sidebar({
   userName,
   userEmail,
   plan,
+  recipients,
 }: {
   userName: string;
   userEmail: string;
   plan: string;
+  recipients: { id: string; name: string; firstName: string }[];
 }) {
   const pathname = usePathname();
   return (
@@ -38,7 +41,10 @@ export function Sidebar({
       <div className="px-2">
         <Logo />
       </div>
-      <nav className="mt-8 flex flex-col gap-1">
+      <div className="mt-6">
+        <ComposeSendButton recipients={recipients} label="Send a gift" className="w-full justify-center" />
+      </div>
+      <nav className="mt-4 flex flex-col gap-1">
         {NAV.map((item) => {
           const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
           return (

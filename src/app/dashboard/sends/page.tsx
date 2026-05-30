@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { SendsBoard } from "@/components/dashboard/SendsBoard";
 import { requireUserId } from "@/lib/auth";
-import { CATALOG, getProduct } from "@/lib/catalog";
+import { getProduct } from "@/lib/catalog";
 import { listRecipients, listSends } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -30,7 +30,6 @@ export default async function SendsPage() {
     name: `${r.firstName} ${r.lastName}`,
     firstName: r.firstName,
   }));
-  const products = CATALOG.map((p) => ({ id: p.id, name: p.name, emoji: p.emoji }));
 
   return (
     <>
@@ -38,7 +37,7 @@ export default async function SendsPage() {
         title="Send pipeline"
         subtitle="Every gift from scheduled to delivered — handwriting, assembly, and tracking in one place."
       />
-      <SendsBoard rows={rows} recipients={recipients} products={products} />
+      <SendsBoard rows={rows} recipients={recipients} />
     </>
   );
 }
