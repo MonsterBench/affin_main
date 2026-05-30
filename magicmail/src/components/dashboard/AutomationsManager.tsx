@@ -71,6 +71,16 @@ export function AutomationsManager({
         </button>
       </div>
 
+      {automations.length === 0 && (
+        <div className="mt-5 rounded-2xl border border-dashed border-pine-200 bg-white/60 p-12 text-center">
+          <div className="text-4xl">⚡</div>
+          <h3 className="mt-3 font-display text-lg font-semibold text-pine-800">No automations yet</h3>
+          <p className="mx-auto mt-1 max-w-sm text-sm text-pine-600/90">
+            Set a moment once — a birthday, a closing, the holidays — and Kringle sends the gift on time, every time.
+          </p>
+        </div>
+      )}
+
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         {automations.map((a) => {
           const product = productName(a.giftId);
