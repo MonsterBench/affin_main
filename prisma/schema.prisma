@@ -96,6 +96,8 @@ model Send {
   trackingNumber String?
   note           String    @default("")
   reason         String? // why this gift was selected (shown in the touch preview)
+  notifiedAt     DateTime? // when the pre-send heads-up email went out
+  source         String    @default("app") // app | crm | storefront
   automationId   String?
   createdAt      DateTime  @default(now())
 

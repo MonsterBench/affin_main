@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
+import { createGuestOrder } from "@/lib/db";
+import type { OccasionType } from "@/lib/types";
 
 // Stripe webhook: keeps each user's plan in sync with their subscription.
 export async function POST(req: Request) {
@@ -31,7 +33,26 @@ export async function POST(req: Request) {
   switch (event.type) {
     case "checkout.session.completed": {
       const s = event.data.object as Stripe.Checkout.Session;
-      await setPlan(s.metadata?.userId, s.metadata?.plan, s.subscription as string | undefined);
+      const m = s.metadata ?? {};
+      if (m.kind === "gift") {
+        // One-off consumer gift paid → create the order.
+        await createGuestOrder({
+          buyerEmail: m.buyerEmail ?? s.customer_email ?? "",
+          giftId: m.giftId ?? "",
+          occasion: (m.occasion ?? "just_because") as OccasionType,
+          firstName: m.firstName ?? "",
+          lastName: m.lastName ?? "",
+          address1: m.address1 ?? "",
+          address2: m.address2 ?? "",
+          city: m.city ?? "",
+          state: m.state ?? "",
+          zip: m.zip ?? "",
+          country: m.country ?? "US",
+          note: m.note ?? "",
+        });
+      } else {
+        await setPlan(m.userId, m.plan, s.subscription as string | undefined);
+      }
       break;
     }
     case "customer.subscription.updated": {

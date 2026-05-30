@@ -21,6 +21,9 @@ automations, a gift catalog, and a send/fulfillment pipeline.
 | Gift catalog | `/dashboard/catalog` | Curated products with tiers, occasions, and margins |
 | Integrations | `/dashboard/integrations` | **CRM / Zapier** inbound webhook + API key so events auto-schedule gifts |
 | Billing | `/dashboard/billing` | Subscription plans via **Stripe** (Checkout + Customer Portal), with a demo mode |
+| Send a gift | `/gift` | **Public one-off consumer checkout** — no login; pick a gift, AI note, Stripe payment |
+
+The **auto-send scheduler** (`src/lib/scheduler.ts`) mirrors Client Giant: it keeps the next recurring touch queued (quarterly aligns to the Top-of-Mind months Mar/Jun/Sep/Dec), emails a heads-up before each send, and auto-releases due sends into fulfillment. Run it via `POST /api/cron/run` (a daily cron, protected by `CRON_SECRET`) or the in-app **Run scheduler** button.
 
 Automations support a **recurring cadence** (one-time / monthly / quarterly / annually) — quarterly powers a "Top of Mind" program. Auth includes **email verification** and **password reset** (dev mode logs the link when no email provider is set).
 

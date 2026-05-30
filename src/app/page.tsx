@@ -48,6 +48,7 @@ function NavBar() {
           <a href="#gifts" className="transition hover:text-cream">Gifts</a>
           <a href="#business" className="transition hover:text-cream">For business</a>
           <a href="#pricing" className="transition hover:text-cream">Pricing</a>
+          <Link href="/gift" className="transition hover:text-cream">Send a gift</Link>
         </div>
         <div className="flex items-center gap-3">
           <Link href="/login" className="hidden text-sm font-medium text-cream/80 transition hover:text-cream sm:block">
@@ -88,12 +89,12 @@ function Hero() {
           >
             Start sending magic
           </Link>
-          <a
-            href="#how"
+          <Link
+            href="/gift"
             className="rounded-full border border-cream/25 px-6 py-3 font-semibold text-cream transition hover:bg-cream/10"
           >
-            See how it works
-          </a>
+            Send a one-off gift
+          </Link>
         </div>
         <dl className="mt-16 grid max-w-2xl grid-cols-3 gap-8 border-t border-cream/15 pt-8">
           {[
