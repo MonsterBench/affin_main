@@ -28,10 +28,10 @@ export default async function GiftSuccessPage({
 
         {exp && magicUrl && (
           <div className="mt-8 rounded-3xl border border-gold-300/30 bg-cream/5 p-6">
-            <p className="font-display text-lg font-semibold text-gold-300">✨ A magic bonus</p>
+            <p className="font-display text-lg font-semibold text-gold-300">✨ A magic keepsake</p>
             <p className="mt-1 text-sm text-cream/80">
-              The letter includes a QR code. When {exp.childName} scans it, they&apos;ll see a
-              personalized video message from Santa.
+              The letter includes a QR code. When {exp.childName} scans it, they get a keepsake page
+              with their letter, a live Christmas countdown, and their Nice List badge.
             </p>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img

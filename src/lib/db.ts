@@ -1,7 +1,7 @@
 import "server-only";
 import { prisma } from "./prisma";
 import { CATALOG, getProduct } from "./catalog";
-import { requestSantaVideo } from "./video";
+import { requestSantaVideo, videoIsLive } from "./video";
 import { STATUS_ORDER } from "./types";
 import type {
   AudienceKind,
@@ -735,7 +735,10 @@ export async function createGuestOrder(input: GuestOrderInput): Promise<{ sendId
   // Every order gets a QR "magic" experience; Santa letters & holiday gifts also
   // kick off a personalized Pixar-style Santa video via Sentinel.
   const magicToken = `mg_${randomToken(20)}`;
-  const wantsVideo = input.giftId.startsWith("santa-letter") || input.occasion === "holiday";
+  // Video is an experimental (beta) add-on — only attempt it when Sentinel is
+  // actually configured, so the keepsake page never promises a video that
+  // won't arrive.
+  const wantsVideo = videoIsLive && (input.giftId.startsWith("santa-letter") || input.occasion === "holiday");
   let videoStatus = "none";
   let videoUrl: string | undefined;
   if (wantsVideo) {
