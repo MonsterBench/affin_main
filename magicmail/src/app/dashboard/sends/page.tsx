@@ -1,13 +1,17 @@
+import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { SendsBoard } from "@/components/dashboard/SendsBoard";
+import { requireUserId } from "@/lib/auth";
 import { CATALOG, getProduct } from "@/lib/catalog";
-import { listRecipients, listSends } from "@/lib/store";
+import { listRecipients, listSends } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
-export default function SendsPage() {
-  const sends = listSends();
-  const recipientList = listRecipients();
+export default async function SendsPage() {
+  const userId = await requireUserId();
+  if (!userId) redirect("/login");
+
+  const [sends, recipientList] = await Promise.all([listSends(userId), listRecipients(userId)]);
 
   const rows = sends.map((s) => {
     const r = recipientList.find((x) => x.id === s.recipientId);

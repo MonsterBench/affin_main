@@ -1,20 +1,31 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/dashboard/PageHeader";
-
-// Reads the live in-memory store, so render on each request rather than at build.
-export const dynamic = "force-dynamic";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { OccasionBadge, StatusBadge } from "@/components/ui/Badge";
+import { requireUserId } from "@/lib/auth";
 import { getProduct } from "@/lib/catalog";
 import { currency, shortDate } from "@/lib/format";
-import { computeMetrics } from "@/lib/metrics";
-import { getRecipient, listAutomations, listSends } from "@/lib/store";
+import { computeMetrics, listAutomations, listRecipients, listSends } from "@/lib/db";
 import { STATUS_LABELS, STATUS_ORDER } from "@/lib/types";
 
-export default function OverviewPage() {
-  const m = computeMetrics();
-  const sends = listSends();
-  const automations = listAutomations();
+// Reads the live database, so render on each request rather than at build.
+export const dynamic = "force-dynamic";
+
+export default async function OverviewPage() {
+  const userId = await requireUserId();
+  if (!userId) redirect("/login");
+
+  const [m, sends, automations, recipients] = await Promise.all([
+    computeMetrics(userId),
+    listSends(userId),
+    listAutomations(userId),
+    listRecipients(userId),
+  ]);
+  const nameOf = (id: string) => {
+    const r = recipients.find((x) => x.id === id);
+    return r ? `${r.firstName} ${r.lastName}` : "Unknown";
+  };
 
   const now = new Date();
   const upcoming = sends
@@ -67,7 +78,6 @@ export default function OverviewPage() {
               <p className="py-8 text-center text-sm text-pine-500">Nothing scheduled yet. Create your first send.</p>
             )}
             {upcoming.map((s) => {
-              const r = getRecipient(s.recipientId);
               const p = getProduct(s.giftId);
               return (
                 <div key={s.id} className="flex items-center gap-4 py-3.5">
@@ -76,7 +86,7 @@ export default function OverviewPage() {
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium text-pine-800">
-                      {r ? `${r.firstName} ${r.lastName}` : "Unknown"} · {p?.name}
+                      {nameOf(s.recipientId)} · {p?.name}
                     </p>
                     <p className="text-xs text-pine-500">Mails {shortDate(s.scheduledFor)}</p>
                   </div>

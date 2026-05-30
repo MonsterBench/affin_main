@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
+import { WaitlistForm } from "@/components/marketing/WaitlistForm";
 import { CATALOG } from "@/lib/catalog";
 import { currency } from "@/lib/format";
 
@@ -48,12 +49,17 @@ function NavBar() {
           <a href="#business" className="transition hover:text-cream">For business</a>
           <a href="#pricing" className="transition hover:text-cream">Pricing</a>
         </div>
-        <Link
-          href="/dashboard"
-          className="rounded-full bg-gold-300 px-4 py-2 text-sm font-semibold text-pine-900 shadow-card transition hover:bg-gold-200"
-        >
-          Open dashboard
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href="/login" className="hidden text-sm font-medium text-cream/80 transition hover:text-cream sm:block">
+            Sign in
+          </Link>
+          <Link
+            href="/signup"
+            className="rounded-full bg-gold-300 px-4 py-2 text-sm font-semibold text-pine-900 shadow-card transition hover:bg-gold-200"
+          >
+            Get started
+          </Link>
+        </div>
       </nav>
     </header>
   );
@@ -77,7 +83,7 @@ function Hero() {
         </p>
         <div className="mt-9 flex flex-wrap items-center gap-4">
           <Link
-            href="/dashboard"
+            href="/signup"
             className="rounded-full bg-gold-300 px-6 py-3 font-semibold text-pine-900 shadow-lift transition hover:bg-gold-200"
           >
             Start sending magic
@@ -204,7 +210,7 @@ function Business() {
             ))}
           </ul>
           <Link
-            href="/dashboard"
+            href="/signup"
             className="mt-8 inline-flex rounded-full bg-pine-700 px-6 py-3 font-semibold text-cream shadow-card transition hover:bg-pine-600"
           >
             Explore the platform
@@ -294,7 +300,7 @@ function Pricing() {
                 ))}
               </ul>
               <Link
-                href="/dashboard"
+                href="/signup"
                 className={`mt-7 rounded-full px-5 py-2.5 text-center font-semibold transition ${
                   plan.featured
                     ? "bg-gold-300 text-pine-900 hover:bg-gold-200"
@@ -322,20 +328,7 @@ function CTA() {
           Join the waitlist of agents, advisors, and families bringing back the
           handwritten touch.
         </p>
-        <form className="mx-auto mt-8 flex max-w-md flex-col gap-3 sm:flex-row">
-          <input
-            type="email"
-            required
-            placeholder="you@example.com"
-            className="flex-1 rounded-full border border-cream/20 bg-cream/10 px-5 py-3 text-cream placeholder:text-cream/50 focus:border-gold-300 focus:outline-none"
-          />
-          <button
-            type="submit"
-            className="rounded-full bg-gold-300 px-6 py-3 font-semibold text-pine-900 transition hover:bg-gold-200"
-          >
-            Join waitlist
-          </button>
-        </form>
+        <WaitlistForm />
       </div>
     </section>
   );

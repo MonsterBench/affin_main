@@ -1,14 +1,18 @@
+import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { AddRecipientButton } from "@/components/dashboard/AddRecipientButton";
 import { OccasionBadge, Tag } from "@/components/ui/Badge";
+import { requireUserId } from "@/lib/auth";
 import { initials, shortDate } from "@/lib/format";
-import { listRecipients } from "@/lib/store";
+import { listRecipients } from "@/lib/db";
 import { AUDIENCE_LABELS } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-export default function RecipientsPage() {
-  const recipients = listRecipients();
+export default async function RecipientsPage() {
+  const userId = await requireUserId();
+  if (!userId) redirect("/login");
+  const recipients = await listRecipients(userId);
 
   return (
     <>
@@ -30,6 +34,13 @@ export default function RecipientsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-pine-50">
+            {recipients.length === 0 && (
+              <tr>
+                <td colSpan={5} className="px-5 py-12 text-center text-sm text-pine-500">
+                  No recipients yet. Add your first one to get started.
+                </td>
+              </tr>
+            )}
             {recipients.map((r) => {
               const next = [...r.importantDates].sort((a, b) =>
                 a.date.slice(5).localeCompare(b.date.slice(5)),
