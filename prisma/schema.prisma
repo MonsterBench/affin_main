@@ -23,6 +23,7 @@ model User {
   resetToken           String?      @unique
   resetTokenExpiry     DateTime?
   apiKey               String?      @unique // for CRM / Zapier inbound webhooks
+  fubApiKey            String? // Follow Up Boss API key (to fetch resource details)
   createdAt            DateTime     @default(now())
   recipients           Recipient[]
   automations          Automation[]

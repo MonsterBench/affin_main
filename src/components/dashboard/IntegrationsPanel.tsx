@@ -19,10 +19,40 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-export function IntegrationsPanel({ apiKey: initialKey, webhookUrl }: { apiKey: string; webhookUrl: string }) {
+export function IntegrationsPanel({
+  apiKey: initialKey,
+  webhookUrl,
+  fubWebhookUrl,
+  deliveryWebhookUrl,
+  fubConnected: initialFub,
+}: {
+  apiKey: string;
+  webhookUrl: string;
+  fubWebhookUrl: string;
+  deliveryWebhookUrl: string;
+  fubConnected: boolean;
+}) {
   const [apiKey, setApiKey] = useState(initialKey);
   const [revealed, setRevealed] = useState(false);
   const [rotating, setRotating] = useState(false);
+  const [fubKey, setFubKey] = useState("");
+  const [fubConnected, setFubConnected] = useState(initialFub);
+  const [fubBusy, setFubBusy] = useState(false);
+
+  async function saveFub(connect: boolean) {
+    setFubBusy(true);
+    const res = await fetch("/api/integrations/followupboss/key", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fubApiKey: connect ? fubKey : "" }),
+    });
+    const d = await res.json().catch(() => ({}));
+    setFubBusy(false);
+    if (d.ok) {
+      setFubConnected(d.connected);
+      if (!d.connected) setFubKey("");
+    }
+  }
 
   const masked = apiKey.slice(0, 11) + "•".repeat(18);
 
@@ -130,8 +160,76 @@ export function IntegrationsPanel({ apiKey: initialKey, webhookUrl }: { apiKey: 
         </pre>
         <p className="mt-3 text-xs text-pine-500">
           On success we upsert the recipient and fire any active automation whose trigger matches the event.
-          Native one-click connectors for Follow Up Boss, HubSpot, and Salesforce are on the roadmap.
         </p>
+      </div>
+
+      {/* Follow Up Boss native connector */}
+      <div className="rounded-2xl border border-pine-100 bg-white p-6 shadow-card">
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-lg font-semibold text-pine-800">Follow Up Boss</h2>
+          <span
+            className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+              fubConnected ? "bg-emerald-100 text-emerald-700" : "bg-pine-50 text-pine-500"
+            }`}
+          >
+            {fubConnected ? "Connected" : "Not connected"}
+          </span>
+        </div>
+        <p className="mt-2 text-sm leading-relaxed text-pine-600/90">
+          Paste your Follow Up Boss API key so we can read contact details when an event fires
+          (closings → closing gift, new leads → welcome). Then add the webhook URL below in FUB under
+          <span className="font-medium"> Admin → Integrations → Webhooks</span>.
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <input
+            type="password"
+            value={fubKey}
+            onChange={(e) => setFubKey(e.target.value)}
+            placeholder={fubConnected ? "•••••••• (saved)" : "FUB API key"}
+            className="flex-1 rounded-xl border border-pine-200 bg-cream/40 px-3.5 py-2.5 text-sm focus:border-pine-500 focus:bg-white focus:outline-none"
+          />
+          {fubConnected ? (
+            <button
+              onClick={() => saveFub(false)}
+              disabled={fubBusy}
+              className="rounded-full border border-berry-400/40 px-4 py-2 text-sm font-semibold text-berry-500 hover:bg-berry-500/5 disabled:opacity-60"
+            >
+              {fubBusy ? "…" : "Disconnect"}
+            </button>
+          ) : (
+            <button
+              onClick={() => saveFub(true)}
+              disabled={fubBusy || !fubKey}
+              className="rounded-full bg-pine-700 px-4 py-2 text-sm font-semibold text-cream hover:bg-pine-600 disabled:opacity-60"
+            >
+              {fubBusy ? "…" : "Connect"}
+            </button>
+          )}
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <code className="flex-1 truncate rounded-xl bg-pine-50 px-4 py-2.5 font-mono text-xs text-pine-800">
+            {fubWebhookUrl}
+          </code>
+          <CopyButton text={fubWebhookUrl} />
+        </div>
+      </div>
+
+      {/* Delivery webhook */}
+      <div className="rounded-2xl border border-pine-100 bg-white p-6 shadow-card">
+        <h2 className="font-display text-lg font-semibold text-pine-800">Delivery status webhook</h2>
+        <p className="mt-2 text-sm leading-relaxed text-pine-600/90">
+          Point your handwriting/shipping provider here to push tracking updates. We&apos;ll mark
+          the send <code>shipped</code> or <code>delivered</code> and email you on delivery.
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <code className="flex-1 truncate rounded-xl bg-pine-50 px-4 py-2.5 font-mono text-xs text-pine-800">
+            POST {deliveryWebhookUrl}
+          </code>
+          <CopyButton text={deliveryWebhookUrl} />
+        </div>
+        <pre className="mt-3 overflow-x-auto rounded-xl bg-ink/90 p-4 text-xs leading-relaxed text-cream">
+{`{ "sendId": "...", "status": "delivered", "trackingNumber": "9400 ..." }`}
+        </pre>
       </div>
     </div>
   );

@@ -396,14 +396,50 @@ export async function userIdForApiKey(apiKey: string): Promise<string | null> {
   return user?.id ?? null;
 }
 
+export async function setFubApiKey(userId: string, key: string | null): Promise<void> {
+  await prisma.user.update({ where: { id: userId }, data: { fubApiKey: key || null } });
+}
+
+export async function getFubApiKey(userId: string): Promise<string | null> {
+  const u = await prisma.user.findUnique({ where: { id: userId } });
+  return u?.fubApiKey ?? null;
+}
+
+// Provider delivery/tracking callback → update a send's status. Returns the
+// owner's email so the caller can notify them.
+export async function updateDeliveryStatus(
+  sendId: string,
+  status: SendStatus,
+  trackingNumber?: string,
+): Promise<{ ok: boolean; ownerEmail?: string; recipientName?: string }> {
+  const send = await prisma.send.findUnique({ where: { id: sendId }, include: { user: true, recipient: true } });
+  if (!send) return { ok: false };
+  await prisma.send.update({
+    where: { id: sendId },
+    data: {
+      status,
+      ...(trackingNumber ? { trackingNumber } : {}),
+      ...(status === "delivered" ? { deliveredOn: new Date().toISOString().slice(0, 10) } : {}),
+    },
+  });
+  return {
+    ok: true,
+    ownerEmail: send.user.email,
+    recipientName: `${send.recipient.firstName} ${send.recipient.lastName}`,
+  };
+}
+
 export interface TriggerInput {
   occasion: OccasionType;
   firstName: string;
   lastName: string;
   email?: string;
   company?: string;
+  address1?: string;
   city?: string;
   state?: string;
+  zip?: string;
+  country?: string;
   tags?: string[];
   date?: string; // when the occasion happens (defaults to today)
 }
@@ -437,8 +473,11 @@ export async function triggerFromEvent(userId: string, input: TriggerInput): Pro
         audience: "client",
         email: input.email,
         company: input.company,
+        address1: input.address1 ?? "",
         city: input.city ?? "",
         state: input.state ?? "",
+        zip: input.zip ?? "",
+        country: input.country ?? "US",
         tags: tags.join(","),
         importantDates: { create: [{ occasion: input.occasion, date: occasionDate }] },
       },
