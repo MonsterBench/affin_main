@@ -136,3 +136,44 @@ export async function testHandwritingConnection(): Promise<{ ok: boolean; provid
     return { ok: false, provider, message: "Could not reach Handwrytten." };
   }
 }
+
+// Normalized provider status we track on a send.
+export type FulfillStatus = "queued" | "submitted" | "writing" | "mailed" | "delivered" | "failed";
+
+// Polls a provider for the latest status of a dispatched order. Returns null
+// when there's nothing to update (unknown provider, local placeholder job id, or
+// the request failed). Only Handwrytten is queryable; manual/axidraw are driven
+// by the operator/agent and have no remote status to fetch.
+export async function fetchHandwritingStatus(
+  provider: string,
+  jobId: string,
+): Promise<FulfillStatus | null> {
+  if (provider !== "handwrytten" || !process.env.HANDWRYTTEN_API_KEY) return null;
+  if (!jobId || jobId.startsWith("hw_")) return null; // local placeholder id, never submitted
+
+  const key = process.env.HANDWRYTTEN_API_KEY;
+  const base = process.env.HANDWRYTTEN_API_URL || "https://api.handwrytten.com/v1";
+  try {
+    const res = await fetch(`${base}/orders/${encodeURIComponent(jobId)}`, {
+      headers: { Authorization: key },
+    });
+    if (!res.ok) return null;
+    const data = await res.json().catch(() => ({}));
+    return mapHandwrittenStatus(String(data?.status ?? data?.order_status ?? ""));
+  } catch {
+    return null;
+  }
+}
+
+// Maps Handwrytten's order statuses onto ours. Unknown non-empty values map to
+// "submitted" so we still show forward progress without inventing a stage.
+function mapHandwrittenStatus(raw: string): FulfillStatus | null {
+  const s = raw.toLowerCase();
+  if (!s) return null;
+  if (s.includes("deliver")) return "delivered";
+  if (s.includes("mail") || s.includes("ship") || s.includes("sent") || s.includes("complete")) return "mailed";
+  if (s.includes("print") || s.includes("writ") || s.includes("process") || s.includes("production")) return "writing";
+  if (s.includes("cancel") || s.includes("fail") || s.includes("error") || s.includes("reject")) return "failed";
+  if (s.includes("queue") || s.includes("pending") || s.includes("hold")) return "queued";
+  return "submitted";
+}

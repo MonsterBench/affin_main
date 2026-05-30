@@ -48,6 +48,8 @@ export function FulfillmentQueue({ orders, provider }: { orders: Order[]; provid
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [filter, setFilter] = useState<Filter>("all");
   const [banner, setBanner] = useState<string | null>(null);
+  const [testing, setTesting] = useState(false);
+  const [polling, setPolling] = useState(false);
 
   const counts = useMemo(
     () => ({
@@ -95,6 +97,33 @@ export function FulfillmentQueue({ orders, provider }: { orders: Order[]; provid
     }
   }
 
+  async function testConnection() {
+    setTesting(true);
+    setBanner(null);
+    try {
+      const res = await fetch("/api/handwriting/test", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      setBanner((data.ok ? "✓ " : "⚠️ ") + (data.message ?? "Connection test complete."));
+    } finally {
+      setTesting(false);
+    }
+  }
+
+  async function refreshStatus() {
+    setPolling(true);
+    setBanner(null);
+    try {
+      const res = await fetch("/api/fulfillment/poll", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (data.ok) {
+        setBanner(`Checked ${data.checked} order${data.checked === 1 ? "" : "s"} · ${data.updated} updated.`);
+        router.refresh();
+      }
+    } finally {
+      setPolling(false);
+    }
+  }
+
   const tabs: { id: Filter; label: string }[] = [
     { id: "all", label: "All" },
     { id: "scheduled", label: "Scheduled" },
@@ -115,6 +144,20 @@ export function FulfillmentQueue({ orders, provider }: { orders: Order[]; provid
             className="rounded-full bg-pine-700 px-4 py-2 text-sm font-semibold text-cream transition hover:bg-pine-600 disabled:opacity-50"
           >
             {bulkBusy ? "Sending…" : `✍️ Send all ready (${readyCount})`}
+          </button>
+          <button
+            onClick={refreshStatus}
+            disabled={polling}
+            className="rounded-full border border-pine-300 px-4 py-2 text-sm font-semibold text-pine-700 transition hover:bg-pine-50 disabled:opacity-50"
+          >
+            {polling ? "Refreshing…" : "↻ Refresh status"}
+          </button>
+          <button
+            onClick={testConnection}
+            disabled={testing}
+            className="rounded-full border border-pine-300 px-4 py-2 text-sm font-semibold text-pine-700 transition hover:bg-pine-50 disabled:opacity-50"
+          >
+            {testing ? "Testing…" : "Test connection"}
           </button>
           <button
             onClick={() => window.location.assign("/api/fulfillment/export")}

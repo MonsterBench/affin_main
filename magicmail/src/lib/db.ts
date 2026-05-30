@@ -2,6 +2,7 @@ import "server-only";
 import { prisma } from "./prisma";
 import { CATALOG, getProduct } from "./catalog";
 import { requestSantaVideo, videoIsLive } from "./video";
+import { fetchHandwritingStatus } from "./handwriting";
 import { STATUS_ORDER } from "./types";
 import type {
   AudienceKind,
@@ -810,4 +811,47 @@ export async function magicTokensForUser(userId: string): Promise<Record<string,
   const out: Record<string, string> = {};
   for (const r of rows) if (r.magicToken) out[r.id] = r.magicToken;
   return out;
+}
+
+// ---- Provider status polling ---------------------------------------------
+// Queries the fulfillment provider for each dispatched-but-not-finished send,
+// updates fulfillStatus, and reflects terminal states into the pipeline:
+// "mailed" -> shipped, "delivered" -> delivered. Scope to one user, or all
+// (cron). Safe/no-op for manual/axidraw providers and when no key is set.
+export async function pollFulfillmentStatuses(opts: { userId?: string } = {}): Promise<{ checked: number; updated: number }> {
+  const sends = await prisma.send.findMany({
+    where: {
+      ...(opts.userId ? { userId: opts.userId } : {}),
+      fulfillProvider: { not: null },
+      fulfillJobId: { not: null },
+      status: { in: ["handwriting", "assembling", "shipped"] },
+    },
+  });
+
+  let updated = 0;
+  for (const s of sends) {
+    const next = await fetchHandwritingStatus(s.fulfillProvider ?? "", s.fulfillJobId ?? "");
+    if (!next) continue;
+
+    const data: {
+      fulfillStatus: string;
+      status?: string;
+      trackingNumber?: string;
+      deliveredOn?: string;
+    } = { fulfillStatus: next };
+
+    if (next === "mailed" && s.status !== "shipped" && s.status !== "delivered") {
+      data.status = "shipped";
+      if (!s.trackingNumber) data.trackingNumber = `HW ${s.fulfillJobId}`;
+    } else if (next === "delivered") {
+      data.status = "delivered";
+      data.deliveredOn = new Date().toISOString().slice(0, 10);
+    }
+
+    const changed = data.fulfillStatus !== s.fulfillStatus || (data.status && data.status !== s.status);
+    if (!changed) continue;
+    await prisma.send.update({ where: { id: s.id }, data });
+    updated++;
+  }
+  return { checked: sends.length, updated };
 }
