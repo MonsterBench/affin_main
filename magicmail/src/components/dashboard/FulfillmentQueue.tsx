@@ -34,12 +34,15 @@ export function FulfillmentQueue({ orders, provider }: { orders: Order[]; provid
 
   async function toPen(id: string) {
     setBusy(id);
-    const res = await fetch(`/api/fulfillment/${id}`, { method: "POST" });
-    const data = await res.json().catch(() => ({}));
-    setBusy(null);
-    if (data.ok) {
-      setResults((r) => ({ ...r, [id]: data.message }));
-      router.refresh();
+    try {
+      const res = await fetch(`/api/fulfillment/${id}`, { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (data.ok) {
+        setResults((r) => ({ ...r, [id]: data.message }));
+        router.refresh();
+      }
+    } finally {
+      setBusy(null);
     }
   }
 

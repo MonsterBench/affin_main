@@ -38,6 +38,34 @@ export function IntegrationsPanel({
   const [fubKey, setFubKey] = useState("");
   const [fubConnected, setFubConnected] = useState(initialFub);
   const [fubBusy, setFubBusy] = useState(false);
+  const [testBusy, setTestBusy] = useState(false);
+  const [testResult, setTestResult] = useState<string | null>(null);
+
+  // Fire a sample event through the real webhook so the CRM integration is
+  // verifiable from the UI (and shows whether an automation matched).
+  async function sendTestEvent() {
+    setTestBusy(true);
+    setTestResult(null);
+    try {
+      const res = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event: "closing",
+          firstName: "Test",
+          lastName: "Lead",
+          email: "test.lead@example.com",
+          tags: ["real-estate"],
+        }),
+      });
+      const d = await res.json().catch(() => ({}));
+      setTestResult(res.ok ? d.message ?? "Event received." : d.error ?? "Test failed.");
+    } catch {
+      setTestResult("Could not reach the webhook.");
+    } finally {
+      setTestBusy(false);
+    }
+  }
 
   async function saveFub(connect: boolean) {
     setFubBusy(true);
@@ -141,7 +169,17 @@ export function IntegrationsPanel({
             POST {webhookUrl}
           </code>
           <CopyButton text={webhookUrl} />
+          <button
+            onClick={sendTestEvent}
+            disabled={testBusy}
+            className="rounded-full bg-pine-700 px-3 py-1 text-xs font-semibold text-cream transition hover:bg-pine-600 disabled:opacity-60"
+          >
+            {testBusy ? "Testing…" : "Send test event"}
+          </button>
         </div>
+        {testResult && (
+          <p className="mt-2 rounded-xl bg-pine-50 px-3.5 py-2 text-sm text-pine-700">✓ {testResult}</p>
+        )}
         <p className="mt-3 text-sm text-pine-600/90">Supported <code>event</code> values:</p>
         <div className="mt-2 flex flex-wrap gap-2">
           {Object.entries(OCCASION_LABELS).map(([k, label]) => (
