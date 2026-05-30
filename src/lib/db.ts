@@ -74,6 +74,22 @@ export async function listRecipients(userId: string): Promise<Recipient[]> {
   return rows.map(toRecipient);
 }
 
+export async function getRecipient(userId: string, id: string): Promise<Recipient | null> {
+  const row = await prisma.recipient.findFirst({
+    where: { id, userId },
+    include: { importantDates: true },
+  });
+  return row ? toRecipient(row) : null;
+}
+
+export async function sendsForRecipient(userId: string, recipientId: string): Promise<Send[]> {
+  const rows = await prisma.send.findMany({
+    where: { userId, recipientId },
+    orderBy: { scheduledFor: "desc" },
+  });
+  return rows.map(toSend);
+}
+
 export async function addRecipient(
   userId: string,
   input: Omit<Recipient, "id" | "createdAt">,

@@ -9,6 +9,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { getProduct } from "@/lib/catalog";
 import { currency, shortDate } from "@/lib/format";
 import { computeMetrics, listAutomations, listRecipients, listSends } from "@/lib/db";
+import { getSuggestions } from "@/lib/memory";
+import { SuggestionsCard } from "@/components/dashboard/SuggestionsCard";
 import { STATUS_LABELS, STATUS_ORDER } from "@/lib/types";
 
 // Reads the live database, so render on each request rather than at build.
@@ -19,12 +21,18 @@ export default async function OverviewPage() {
   if (!user) redirect("/login");
   const userId = user.id;
 
-  const [m, sends, automations, recipients] = await Promise.all([
+  const [m, sends, automations, recipients, suggestions] = await Promise.all([
     computeMetrics(userId),
     listSends(userId),
     listAutomations(userId),
     listRecipients(userId),
+    getSuggestions(userId, 5),
   ]);
+  const recipientLites = recipients.map((r) => ({
+    id: r.id,
+    name: `${r.firstName} ${r.lastName}`,
+    firstName: r.firstName,
+  }));
   const firstName = user.name.split(" ")[0];
   const nameOf = (id: string) => {
     const r = recipients.find((x) => x.id === id);
@@ -66,6 +74,10 @@ export default async function OverviewPage() {
           value={currency(m.revenueScheduled)}
           hint={`${Math.round(m.marginRate * 100)}% blended margin`}
         />
+      </div>
+
+      <div className="mt-8">
+        <SuggestionsCard suggestions={suggestions} recipients={recipientLites} />
       </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-3">
