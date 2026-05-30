@@ -21,14 +21,9 @@ with one bill. Two database choices:
      `DATABASE_URL` you can reference.
    - In the app service **Variables**, set `DATABASE_URL` to
      `${{Postgres.DATABASE_URL}}` (Railway's reference syntax).
-3. **Switch Prisma to Postgres** (one line) in `prisma/schema.prisma`:
-   ```prisma
-   datasource db {
-     provider = "postgresql"
-   }
-   ```
-   The runtime adapter is already auto-selected by the `DATABASE_URL` scheme
-   (`src/lib/prisma.ts`), so no other code changes are needed. Commit and push.
+3. **That's it for the DB** — the Prisma datasource provider and the runtime
+   adapter both auto-switch to Postgres from the `DATABASE_URL` scheme (a build
+   step runs `scripts/set-db-provider.mjs`). No schema edits needed.
 4. **Set the remaining env vars** (see below) and deploy. The pre-deploy step runs
    `prisma db push` to create the tables.
 5. **Seed (optional)**: run `npm run db:seed` once via a Railway shell to create the
@@ -53,9 +48,8 @@ cron via `vercel.json`):
 
 1. Create the Postgres database on Railway, copy its public `DATABASE_URL`.
 2. Import the repo on Vercel, root directory `magicmail/`, set `DATABASE_URL` +
-   the env vars below.
-3. Do the one-line `provider = "postgresql"` change as in Option A.
-4. The included `vercel.json` runs the daily scheduler cron automatically.
+   the env vars below. The provider auto-switches to Postgres at build time.
+3. The included `vercel.json` runs the daily scheduler cron automatically.
 
 ## The daily scheduler
 
