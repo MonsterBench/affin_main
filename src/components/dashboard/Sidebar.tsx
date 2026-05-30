@@ -12,6 +12,7 @@ const NAV = [
   { href: "/dashboard/sends", label: "Send pipeline", icon: "📦" },
   { href: "/dashboard/fulfillment", label: "Fulfillment", icon: "✍️" },
   { href: "/dashboard/catalog", label: "Gift catalog", icon: "🎁" },
+  { href: "/dashboard/reports", label: "Reports & ROI", icon: "📊" },
   { href: "/dashboard/integrations", label: "Integrations", icon: "🔗" },
   { href: "/dashboard/billing", label: "Billing", icon: "💳" },
 ];

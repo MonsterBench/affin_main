@@ -1,6 +1,6 @@
 import "server-only";
 import { prisma } from "./prisma";
-import { applySendAction } from "./db";
+import { applySendAction, nextGiftForRecipient } from "./db";
 import { submitHandwriting } from "./handwriting";
 import { sendEmail, brandedEmail } from "./email";
 import { getProduct } from "./catalog";
@@ -87,16 +87,19 @@ async function ensureRecurringTouches(scope: { userId?: string }): Promise<numbe
       });
       if (open) continue;
 
+      // Rotate gifts so a recurring program never repeats the same one.
+      const giftId = await nextGiftForRecipient(a.userId, r.id, a.giftId);
+
       await prisma.send.create({
         data: {
           userId: a.userId,
           recipientId: r.id,
-          giftId: a.giftId,
+          giftId,
           occasion: a.triggerOccasion,
           status: "scheduled",
           scheduledFor: nextCadenceDate(a.cadence as Cadence),
           note: a.noteTemplate.replaceAll("{firstName}", r.firstName),
-          reason: `Recurring ${a.cadence} “Top of Mind” touch from “${a.name}”`,
+          reason: `Recurring ${a.cadence} “Top of Mind” touch from “${a.name}” (rotated to avoid repeats)`,
           automationId: a.id,
           source: "app",
         },

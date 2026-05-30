@@ -1,6 +1,6 @@
 import "server-only";
 import { prisma } from "./prisma";
-import { getProduct } from "./catalog";
+import { CATALOG, getProduct } from "./catalog";
 import { STATUS_ORDER } from "./types";
 import type {
   AudienceKind,
@@ -358,6 +358,100 @@ export async function computeMetrics(userId: string): Promise<DashboardMetrics> 
       const d = new Date(s.scheduledFor + "T00:00:00");
       return s.status === "scheduled" && d >= now && d <= in30;
     }).length,
+  };
+}
+
+// ---- Gift rotation ("gifts never repeat") --------------------------------
+// Returns the giftIds already queued/sent to a recipient (any non-skipped send).
+export async function giftsSentTo(userId: string, recipientId: string): Promise<Set<string>> {
+  const rows = await prisma.send.findMany({
+    where: { userId, recipientId, status: { not: "skipped" } },
+    select: { giftId: true },
+  });
+  return new Set(rows.map((r) => r.giftId));
+}
+
+// Picks the next gift for a recipient that they haven't received yet, rotating
+// within the anchor gift's category (so a quarterly program never repeats).
+// Falls back to the anchor once every option has been used.
+export async function nextGiftForRecipient(
+  userId: string,
+  recipientId: string,
+  anchorGiftId: string,
+): Promise<string> {
+  const anchor = getProduct(anchorGiftId);
+  const used = await giftsSentTo(userId, recipientId);
+  const pool = CATALOG.filter((p) => p.category === anchor?.category);
+  const candidates = (pool.length ? pool : CATALOG).filter((p) => !used.has(p.id));
+  return candidates[0]?.id ?? anchorGiftId;
+}
+
+// ---- Reports / ROI --------------------------------------------------------
+export interface ReportData {
+  delivered: number;
+  inFlight: number;
+  skipped: number;
+  spendDelivered: number;
+  spendScheduled: number;
+  deliveryRate: number; // delivered / released, 0..1
+  byOccasion: { occasion: OccasionType; count: number }[];
+  byAudience: { audience: AudienceKind; count: number }[];
+  monthly: { label: string; count: number }[];
+  topRecipients: { name: string; count: number }[];
+}
+
+export async function computeReport(userId: string): Promise<ReportData> {
+  const [sends, recipients] = await Promise.all([listSends(userId), listRecipients(userId)]);
+  const recById = new Map(recipients.map((r) => [r.id, r]));
+  const active = sends.filter((s) => s.status !== "skipped");
+
+  const delivered = active.filter((s) => s.status === "delivered");
+  const released = active.filter((s) => s.status !== "scheduled" && s.status !== "paused");
+  const inFlight = active.filter((s) => s.status !== "delivered");
+
+  const sum = (arr: typeof sends) => arr.reduce((t, s) => t + (getProduct(s.giftId)?.price ?? 0), 0);
+
+  // By occasion.
+  const occ = new Map<OccasionType, number>();
+  for (const s of active) occ.set(s.occasion, (occ.get(s.occasion) ?? 0) + 1);
+
+  // By audience.
+  const aud = new Map<AudienceKind, number>();
+  for (const s of active) {
+    const a = recById.get(s.recipientId)?.audience;
+    if (a) aud.set(a, (aud.get(a) ?? 0) + 1);
+  }
+
+  // Last 6 months by scheduled date.
+  const monthly: { label: string; count: number }[] = [];
+  const now = new Date();
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = d.toISOString().slice(0, 7); // yyyy-mm
+    const label = d.toLocaleDateString("en-US", { month: "short" });
+    const count = active.filter((s) => s.scheduledFor.slice(0, 7) === key).length;
+    monthly.push({ label, count });
+  }
+
+  // Top recipients by send count.
+  const perRecipient = new Map<string, number>();
+  for (const s of active) perRecipient.set(s.recipientId, (perRecipient.get(s.recipientId) ?? 0) + 1);
+  const topRecipients = [...perRecipient.entries()]
+    .map(([id, count]) => ({ name: recById.has(id) ? `${recById.get(id)!.firstName} ${recById.get(id)!.lastName}` : "Unknown", count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  return {
+    delivered: delivered.length,
+    inFlight: inFlight.length,
+    skipped: sends.length - active.length,
+    spendDelivered: sum(delivered),
+    spendScheduled: sum(inFlight),
+    deliveryRate: released.length ? delivered.length / released.length : 0,
+    byOccasion: [...occ.entries()].map(([occasion, count]) => ({ occasion, count })).sort((a, b) => b.count - a.count),
+    byAudience: [...aud.entries()].map(([audience, count]) => ({ audience, count })).sort((a, b) => b.count - a.count),
+    monthly,
+    topRecipients,
   };
 }
 
