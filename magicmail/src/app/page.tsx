@@ -48,6 +48,7 @@ function NavBar() {
           <a href="#gifts" className="transition hover:text-cream">Gifts</a>
           <a href="#business" className="transition hover:text-cream">For business</a>
           <a href="#pricing" className="transition hover:text-cream">Pricing</a>
+          <Link href="/santa" className="transition hover:text-cream">Santa letters</Link>
           <Link href="/gift" className="transition hover:text-cream">Send a gift</Link>
         </div>
         <div className="flex items-center gap-3">
@@ -84,10 +85,10 @@ function Hero() {
         </p>
         <div className="mt-9 flex flex-wrap items-center gap-4">
           <Link
-            href="/signup"
+            href="/santa"
             className="rounded-full bg-gold-300 px-6 py-3 font-semibold text-pine-900 shadow-lift transition hover:bg-gold-200"
           >
-            Start sending magic
+            🎅 Write a Santa letter
           </Link>
           <Link
             href="/gift"
