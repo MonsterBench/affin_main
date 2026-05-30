@@ -49,13 +49,28 @@ export interface Recipient {
   audience: AudienceKind;
   company?: string;
   email?: string;
+  address1: string;
+  address2: string;
   city: string;
   state: string;
+  zip: string;
+  country: string;
   tags: string[];
   importantDates: ImportantDate[];
   notes?: string;
   createdAt: string;
 }
+
+// One-line formatted mailing address for fulfillment/operator views.
+export function formatAddress(r: Pick<Recipient, "address1" | "address2" | "city" | "state" | "zip">): string {
+  const street = [r.address1, r.address2].filter(Boolean).join(", ");
+  const cityLine = [r.city, r.state].filter(Boolean).join(", ");
+  return [street, [cityLine, r.zip].filter(Boolean).join(" ")].filter(Boolean).join(" · ");
+}
+
+// How often an automation re-fires for an enrolled recipient. "one_time"
+// fires on the dated occasion; recurring cadences power "Top of Mind" programs.
+export type Cadence = "one_time" | "monthly" | "quarterly" | "annually";
 
 export interface Automation {
   id: string;
@@ -65,6 +80,7 @@ export interface Automation {
   leadTimeDays: number; // how many days before the date we mail
   audienceFilter: AudienceKind | "all";
   tagFilter?: string; // optional tag the recipient must carry
+  cadence: Cadence;
   active: boolean;
   noteTemplate: string;
   createdAt: string;
@@ -72,6 +88,8 @@ export interface Automation {
 
 export type SendStatus =
   | "scheduled"
+  | "paused" // held — won't progress until resumed
+  | "skipped" // cancelled before fulfillment
   | "handwriting" // robotic auto-pen writing the note
   | "assembling"
   | "shipped"
@@ -87,9 +105,17 @@ export interface Send {
   deliveredOn?: string;
   trackingNumber?: string;
   note: string;
+  reason?: string; // why this gift was selected (shown in the touch preview)
   automationId?: string; // null/undefined = sent manually
   createdAt: string;
 }
+
+export const CADENCE_LABELS: Record<Cadence, string> = {
+  one_time: "One time",
+  monthly: "Monthly",
+  quarterly: "Quarterly",
+  annually: "Annually",
+};
 
 export const OCCASION_LABELS: Record<OccasionType, string> = {
   holiday: "Holiday / Santa letter",
@@ -112,12 +138,15 @@ export const AUDIENCE_LABELS: Record<AudienceKind, string> = {
 
 export const STATUS_LABELS: Record<SendStatus, string> = {
   scheduled: "Scheduled",
+  paused: "Paused",
+  skipped: "Skipped",
   handwriting: "Handwriting",
   assembling: "Assembling",
   shipped: "Shipped",
   delivered: "Delivered",
 };
 
+// The linear fulfillment pipeline. Paused/skipped branch off "scheduled".
 export const STATUS_ORDER: SendStatus[] = [
   "scheduled",
   "handwriting",
@@ -125,3 +154,5 @@ export const STATUS_ORDER: SendStatus[] = [
   "shipped",
   "delivered",
 ];
+
+export type SendAction = "advance" | "pause" | "resume" | "skip" | "delay" | "expedite";

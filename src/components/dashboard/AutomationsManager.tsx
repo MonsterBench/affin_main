@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Modal, fieldClass, labelClass } from "@/components/ui/Modal";
 import { OccasionBadge } from "@/components/ui/Badge";
-import { AUDIENCE_LABELS, OCCASION_LABELS } from "@/lib/types";
-import type { Automation, AudienceKind, OccasionType } from "@/lib/types";
+import { AUDIENCE_LABELS, CADENCE_LABELS, OCCASION_LABELS } from "@/lib/types";
+import type { Automation, AudienceKind, Cadence, OccasionType } from "@/lib/types";
 
 interface ProductLite {
   id: string;
@@ -48,6 +48,7 @@ export function AutomationsManager({
         leadTimeDays: Number(f.get("leadTimeDays")),
         audienceFilter: f.get("audienceFilter"),
         tagFilter: f.get("tagFilter") || undefined,
+        cadence: f.get("cadence"),
         noteTemplate: f.get("noteTemplate"),
         active: true,
       }),
@@ -115,6 +116,11 @@ export function AutomationsManager({
                 <span className="rounded-full bg-parchment px-2.5 py-0.5 text-xs text-pine-700">
                   {a.leadTimeDays}d lead time
                 </span>
+                {a.cadence !== "one_time" && (
+                  <span className="rounded-full bg-gold-100 px-2.5 py-0.5 text-xs font-medium text-gold-600">
+                    🔁 {CADENCE_LABELS[a.cadence]}
+                  </span>
+                )}
               </div>
               <p className="mt-3 rounded-xl bg-cream/70 p-3 text-xs italic leading-relaxed text-pine-600">
                 “{a.noteTemplate}”
@@ -166,6 +172,19 @@ export function AutomationsManager({
               <label className={labelClass}>Lead days</label>
               <input name="leadTimeDays" type="number" min={0} max={60} defaultValue={5} className={fieldClass} />
             </div>
+          </div>
+          <div>
+            <label className={labelClass}>Cadence</label>
+            <select name="cadence" className={fieldClass} defaultValue="one_time">
+              {(Object.keys(CADENCE_LABELS) as Cadence[]).map((c) => (
+                <option key={c} value={c}>
+                  {CADENCE_LABELS[c]}{c === "quarterly" ? " — “Top of Mind”" : ""}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-pine-500">
+              Recurring cadences keep sending on a schedule (like a quarterly Top-of-Mind program).
+            </p>
           </div>
           <div>
             <label className={labelClass}>Note template</label>

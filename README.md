@@ -16,9 +16,13 @@ automations, a gift catalog, and a send/fulfillment pipeline.
 | Overview | `/dashboard` | KPIs, upcoming sends, pipeline + automation snapshot |
 | Recipients | `/dashboard/recipients` | Contact list with audiences, tags, occasions; add via modal |
 | Automations | `/dashboard/automations` | Trigger → gift rules (e.g. *Christmas Eve Santa letters*); toggle on/off, create new |
-| Send pipeline | `/dashboard/sends` | Each gift from `scheduled → handwriting → assembling → shipped → delivered`; advance stages |
+| Send pipeline | `/dashboard/sends` | Per-touch controls: **skip / delay / expedite / pause / resume** + advance through fulfillment. **✨ AI-written notes**. |
+| Fulfillment | `/dashboard/fulfillment` | Operator backend: every order with mailing address + AI note, **send-to-auto-pen**, and **CSV export** |
 | Gift catalog | `/dashboard/catalog` | Curated products with tiers, occasions, and margins |
+| Integrations | `/dashboard/integrations` | **CRM / Zapier** inbound webhook + API key so events auto-schedule gifts |
 | Billing | `/dashboard/billing` | Subscription plans via **Stripe** (Checkout + Customer Portal), with a demo mode |
+
+Automations support a **recurring cadence** (one-time / monthly / quarterly / annually) — quarterly powers a "Top of Mind" program. Auth includes **email verification** and **password reset** (dev mode logs the link when no email provider is set).
 
 ## Tech
 
@@ -98,9 +102,25 @@ Change the `datasource` provider in `schema.prisma` to `postgresql`, swap the
 adapter in `src/lib/prisma.ts` for `@prisma/adapter-pg`, set `DATABASE_URL`, and
 run `prisma db push`. No UI or API changes required.
 
+## AI, handwriting & fulfillment
+
+- **AI notes** (`src/lib/ai.ts`) — Claude writes occasion-aware notes (Santa voice for
+  holidays); falls back to themed templates without `ANTHROPIC_API_KEY`.
+- **Handwriting/auto-pen** (`src/lib/handwriting.ts`) — a provider-agnostic layer with
+  adapters for **Handwrytten** (robotic-pen API), **AxiDraw** (in-house pen plotter), or
+  **manual** operator queue. Set `HANDWRITING_PROVIDER`.
+- **Fulfillment** captures full mailing addresses and exposes a production queue + CSV
+  export — the hand-off to an operator, 3PL, or the pen provider.
+
+## Integrations (CRM / Zapier)
+
+Each account gets an API key. CRMs or Zapier `POST` to `/api/integrations/trigger`
+with an event (e.g. `closing`) and contact details; we upsert the recipient and fire
+any matching active automation. See the in-app Integrations page for the exact payload.
+
 ## Roadmap ideas
 
-- CRM sync (Follow Up Boss, HubSpot) and Zapier triggers
-- Real email (magic links, delivery notifications)
-- Auto‑pen / fulfillment partner integration and live shipment tracking
+- Native one-click CRM connectors (Follow Up Boss, HubSpot, Salesforce)
+- Recurring cadence scheduler (cron) to auto-create the next touch
+- Delivery notifications + live shipment tracking
 - Team seats & roles, white‑label branding

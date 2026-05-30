@@ -19,12 +19,17 @@ export default async function SendsPage() {
     return {
       ...s,
       recipientName: r ? `${r.firstName} ${r.lastName}` : "Unknown",
+      recipientFirstName: r?.firstName ?? "",
       productName: p?.name ?? "Gift",
       productEmoji: p?.emoji ?? "🎁",
     };
   });
 
-  const recipients = recipientList.map((r) => ({ id: r.id, name: `${r.firstName} ${r.lastName}` }));
+  const recipients = recipientList.map((r) => ({
+    id: r.id,
+    name: `${r.firstName} ${r.lastName}`,
+    firstName: r.firstName,
+  }));
   const products = CATALOG.map((p) => ({ id: p.id, name: p.name, emoji: p.emoji }));
 
   return (

@@ -3,6 +3,8 @@ import { OCCASION_LABELS, STATUS_LABELS } from "@/lib/types";
 
 const STATUS_STYLES: Record<SendStatus, string> = {
   scheduled: "bg-pine-100 text-pine-700",
+  paused: "bg-stone-200 text-stone-600",
+  skipped: "bg-stone-100 text-stone-500",
   handwriting: "bg-gold-100 text-gold-600",
   assembling: "bg-amber-100 text-amber-700",
   shipped: "bg-sky-100 text-sky-700",
