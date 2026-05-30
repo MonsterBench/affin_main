@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+/* ----------------------------------------------------------------------------
+   Kringle design system
+   A premium "magic mail" palette: deep evergreen, warm gold, parchment cream,
+   and a cranberry accent. Tuned to feel handcrafted and high-end rather than
+   cartoonish.
+---------------------------------------------------------------------------- */
+@theme {
+  --color-pine-50: #eef5f0;
+  --color-pine-100: #d6e7dc;
+  --color-pine-200: #a9cdb6;
+  --color-pine-300: #74ad8a;
+  --color-pine-400: #46895f;
+  --color-pine-500: #2c6b45;
+  --color-pine-600: #1f5436;
+  --color-pine-700: #18432b;
+  --color-pine-800: #123221;
+  --color-pine-900: #0c2317;
+
+  --color-gold-100: #f7eccb;
+  --color-gold-200: #ecd49b;
+  --color-gold-300: #e0bd6c;
+  --color-gold-400: #d4a73f;
+  --color-gold-500: #c9a227;
+  --color-gold-600: #a5821c;
+
+  --color-berry-400: #c0392b;
+  --color-berry-500: #9e2b25;
+  --color-berry-600: #7d201d;
+
+  --color-cream: #faf6ef;
+  --color-parchment: #f4ecdd;
+  --color-ink: #1b211d;
+
+  --font-display: var(--font-fraunces), Georgia, serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --shadow-card: 0 1px 2px rgba(12, 35, 23, 0.04), 0 8px 24px rgba(12, 35, 23, 0.06);
+  --shadow-lift: 0 10px 40px rgba(12, 35, 23, 0.14);
+}
+
+:root {
+  --background: var(--color-cream);
+  --foreground: var(--color-ink);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* Subtle "starry night sky" texture used behind hero/header sections. */
+.bg-magic {
+  background-color: var(--color-pine-900);
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, rgba(255, 255, 255, 0.7) 0, transparent 100%),
+    radial-gradient(1px 1px at 70% 60%, rgba(255, 255, 255, 0.5) 0, transparent 100%),
+    radial-gradient(1.5px 1.5px at 45% 80%, rgba(255, 255, 255, 0.55) 0, transparent 100%),
+    radial-gradient(1px 1px at 85% 20%, rgba(255, 255, 255, 0.45) 0, transparent 100%),
+    radial-gradient(1px 1px at 33% 50%, rgba(255, 255, 255, 0.4) 0, transparent 100%),
+    linear-gradient(165deg, var(--color-pine-700) 0%, var(--color-pine-900) 75%);
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+/* Thin hairline used to separate dashboard sections. */
+.hairline {
+  border-color: color-mix(in srgb, var(--color-pine-900) 12%, transparent);
+}
