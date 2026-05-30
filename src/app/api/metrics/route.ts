@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
-import { computeMetrics } from "@/lib/metrics";
+import { requireUserId } from "@/lib/auth";
+import { computeMetrics } from "@/lib/db";
 
 export async function GET() {
-  return NextResponse.json(computeMetrics());
+  const userId = await requireUserId();
+  if (!userId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  return NextResponse.json(await computeMetrics(userId));
 }

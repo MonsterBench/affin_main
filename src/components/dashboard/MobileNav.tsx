@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "@/components/Logo";
+import { logoutAction } from "@/app/actions/auth";
 
 const NAV = [
   { href: "/dashboard", label: "Overview", exact: true },
@@ -10,13 +11,21 @@ const NAV = [
   { href: "/dashboard/automations", label: "Automations" },
   { href: "/dashboard/sends", label: "Pipeline" },
   { href: "/dashboard/catalog", label: "Catalog" },
+  { href: "/dashboard/billing", label: "Billing" },
 ];
 
-export function MobileNav() {
+export function MobileNav({ userName }: { userName: string }) {
   const pathname = usePathname();
   return (
     <div className="border-b hairline bg-white px-4 py-3 lg:hidden">
-      <Logo />
+      <div className="flex items-center justify-between">
+        <Logo />
+        <form action={logoutAction}>
+          <button className="text-xs font-medium text-pine-500" title={userName}>
+            Sign out
+          </button>
+        </form>
+      </div>
       <nav className="mt-3 flex gap-2 overflow-x-auto pb-1">
         {NAV.map((item) => {
           const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);

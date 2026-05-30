@@ -1,0 +1,100 @@
+// Kringle data model. SQLite for the MVP; the schema is written to be
+// Postgres-compatible so it can graduate by swapping the datasource provider.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id                   String       @id @default(cuid())
+  email                String       @unique
+  name                 String
+  passwordHash         String
+  plan                 String       @default("free") // free | pro | business
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  createdAt            DateTime     @default(now())
+  recipients           Recipient[]
+  automations          Automation[]
+  sends                Send[]
+}
+
+model Recipient {
+  id             String          @id @default(cuid())
+  userId         String
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName      String
+  lastName       String
+  audience       String // client | employee | family | kid | prospect
+  company        String?
+  email          String?
+  city           String          @default("")
+  state          String          @default("")
+  tags           String          @default("") // comma-separated
+  notes          String?
+  createdAt      DateTime        @default(now())
+  importantDates ImportantDate[]
+  sends          Send[]
+
+  @@index([userId])
+}
+
+model ImportantDate {
+  id          String    @id @default(cuid())
+  recipientId String
+  recipient   Recipient @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  occasion    String
+  date        String // ISO yyyy-mm-dd; year ignored for recurring
+  label       String?
+
+  @@index([recipientId])
+}
+
+model Automation {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  triggerOccasion String
+  giftId          String
+  leadTimeDays    Int      @default(5)
+  audienceFilter  String   @default("all")
+  tagFilter       String?
+  active          Boolean  @default(true)
+  noteTemplate    String   @default("")
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Send {
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipientId    String
+  recipient      Recipient @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  giftId         String
+  occasion       String
+  status         String    @default("scheduled")
+  scheduledFor   String // ISO yyyy-mm-dd
+  deliveredOn    String?
+  trackingNumber String?
+  note           String    @default("")
+  automationId   String?
+  createdAt      DateTime  @default(now())
+
+  @@index([userId])
+  @@index([recipientId])
+}
+
+model WaitlistEntry {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  source    String?
+  createdAt DateTime @default(now())
+}
