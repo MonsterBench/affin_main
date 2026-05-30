@@ -58,6 +58,20 @@ body {
 
 .font-display {
   font-family: var(--font-display);
+  font-optical-sizing: auto;
+  letter-spacing: -0.01em;
+}
+
+/* Refined, consistent focus + selection treatment across the app. */
+::selection {
+  background: var(--color-gold-200);
+  color: var(--color-pine-900);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-pine-500);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 /* Subtle "starry night sky" texture used behind hero/header sections. */

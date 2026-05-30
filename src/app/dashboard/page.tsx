@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { OccasionBadge, StatusBadge } from "@/components/ui/Badge";
-import { requireUserId } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { getProduct } from "@/lib/catalog";
 import { currency, shortDate } from "@/lib/format";
 import { computeMetrics, listAutomations, listRecipients, listSends } from "@/lib/db";
@@ -13,8 +13,9 @@ import { STATUS_LABELS, STATUS_ORDER } from "@/lib/types";
 export const dynamic = "force-dynamic";
 
 export default async function OverviewPage() {
-  const userId = await requireUserId();
-  if (!userId) redirect("/login");
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+  const userId = user.id;
 
   const [m, sends, automations, recipients] = await Promise.all([
     computeMetrics(userId),
@@ -22,6 +23,7 @@ export default async function OverviewPage() {
     listAutomations(userId),
     listRecipients(userId),
   ]);
+  const firstName = user.name.split(" ")[0];
   const nameOf = (id: string) => {
     const r = recipients.find((x) => x.id === id);
     return r ? `${r.firstName} ${r.lastName}` : "Unknown";
@@ -41,7 +43,7 @@ export default async function OverviewPage() {
   return (
     <>
       <PageHeader
-        title="Good to see you 👋"
+        title={`Good to see you, ${firstName} 👋`}
         subtitle="Here's the magic in motion across your accounts."
         action={
           <Link
