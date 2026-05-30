@@ -106,6 +106,9 @@ export interface Send {
   trackingNumber?: string;
   note: string;
   reason?: string; // why this gift was selected (shown in the touch preview)
+  fulfillProvider?: string; // handwrytten | axidraw | manual
+  fulfillStatus?: string; // provider-reported status
+  fulfillJobId?: string; // provider order/job id
   automationId?: string; // null/undefined = sent manually
   createdAt: string;
 }

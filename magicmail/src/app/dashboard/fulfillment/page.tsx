@@ -39,6 +39,9 @@ export default async function FulfillmentPage() {
         scheduledFor: s.scheduledFor,
         note: s.note,
         magicToken: tokens[s.id],
+        fulfillProvider: s.fulfillProvider,
+        fulfillStatus: s.fulfillStatus,
+        fulfillJobId: s.fulfillJobId,
       };
     });
 

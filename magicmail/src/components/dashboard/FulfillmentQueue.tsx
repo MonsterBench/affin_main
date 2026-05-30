@@ -21,7 +21,16 @@ export interface Order {
   scheduledFor: string;
   note: string;
   magicToken?: string;
+  fulfillProvider?: string;
+  fulfillStatus?: string;
+  fulfillJobId?: string;
 }
+
+const PROVIDER_NAME: Record<string, string> = {
+  handwrytten: "Handwrytten",
+  axidraw: "In-house pen",
+  manual: "Operator",
+};
 
 const PROVIDER_LABEL: Record<string, string> = {
   handwrytten: "Handwrytten API",
@@ -151,6 +160,18 @@ export function FulfillmentQueue({ orders, provider }: { orders: Order[]; provid
               </div>
               <StatusBadge status={o.status} />
             </div>
+
+            {o.fulfillProvider && (
+              <div className="mt-2 flex flex-wrap items-center gap-2 rounded-xl bg-pine-50 px-3 py-2 text-xs">
+                <span className="font-semibold text-pine-700">
+                  📮 Dispatched to {PROVIDER_NAME[o.fulfillProvider] ?? o.fulfillProvider}
+                </span>
+                {o.fulfillStatus && (
+                  <span className="rounded-full bg-white px-2 py-0.5 font-medium text-pine-600">{o.fulfillStatus}</span>
+                )}
+                {o.fulfillJobId && <span className="text-pine-400">job {o.fulfillJobId}</span>}
+              </div>
+            )}
 
             <div className="mt-3 space-y-2 text-sm">
               <div>

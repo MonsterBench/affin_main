@@ -44,6 +44,17 @@ export async function POST(_req: Request, ctx: RouteContext<"/api/fulfillment/[i
     style: getProduct(send.giftId)?.category === "letter" ? "santa-script" : "casual-script",
   });
 
+  // Record who's making it + the provider job, for operator tracking.
+  await prisma.send.update({
+    where: { id },
+    data: {
+      fulfillProvider: result.provider,
+      fulfillJobId: result.jobId,
+      fulfillStatus: result.status,
+      dispatchedAt: new Date(),
+    },
+  });
+
   // Advance scheduled → handwriting so the pipeline reflects production.
   if (send.status === "scheduled") await applySendAction(userId, id, "advance");
 

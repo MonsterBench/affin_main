@@ -116,9 +116,13 @@ model Send {
   magicToken     String?   @unique // powers the QR "magic" experience page
   videoStatus    String    @default("none") // none | requested | ready | failed
   videoUrl       String?
-  styleId        String? // chosen letter style/stationery preset
-  automationId   String?
-  createdAt      DateTime  @default(now())
+  styleId         String? // chosen letter style/stationery preset
+  fulfillProvider String? // handwrytten | axidraw | manual — who is making it
+  fulfillJobId    String? // provider's order/job id, for tracking
+  fulfillStatus   String? // provider status: queued|submitted|writing|mailed|failed
+  dispatchedAt    DateTime? // when it was handed to the provider
+  automationId    String?
+  createdAt       DateTime  @default(now())
 
   @@index([userId])
   @@index([recipientId])

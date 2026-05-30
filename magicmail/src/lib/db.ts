@@ -189,6 +189,9 @@ function toSend(s: {
   trackingNumber: string | null;
   note: string;
   reason: string | null;
+  fulfillProvider?: string | null;
+  fulfillStatus?: string | null;
+  fulfillJobId?: string | null;
   automationId: string | null;
   createdAt: Date;
 }): Send {
@@ -203,6 +206,9 @@ function toSend(s: {
     trackingNumber: s.trackingNumber ?? undefined,
     note: s.note,
     reason: s.reason ?? undefined,
+    fulfillProvider: s.fulfillProvider ?? undefined,
+    fulfillStatus: s.fulfillStatus ?? undefined,
+    fulfillJobId: s.fulfillJobId ?? undefined,
     automationId: s.automationId ?? undefined,
     createdAt: s.createdAt.toISOString().slice(0, 10),
   };
