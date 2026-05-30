@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { StatusBadge } from "@/components/ui/Badge";
 import { shortDate } from "@/lib/format";
@@ -11,7 +11,8 @@ export interface Order {
   id: string;
   recipientName: string;
   address: string;
-  addressMissing: boolean;
+  addressOk: boolean;
+  addressIssue?: string;
   gift: string;
   emoji: string;
   occasion: OccasionType;
@@ -27,24 +28,68 @@ const PROVIDER_LABEL: Record<string, string> = {
   manual: "Operator / manual",
 };
 
+type Filter = "all" | "scheduled" | "production";
+
 export function FulfillmentQueue({ orders, provider }: { orders: Order[]; provider: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
+  const [bulkBusy, setBulkBusy] = useState(false);
   const [results, setResults] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [filter, setFilter] = useState<Filter>("all");
+  const [banner, setBanner] = useState<string | null>(null);
+
+  const counts = useMemo(
+    () => ({
+      all: orders.length,
+      scheduled: orders.filter((o) => o.status === "scheduled").length,
+      production: orders.filter((o) => o.status !== "scheduled").length,
+    }),
+    [orders],
+  );
+  const readyCount = orders.filter((o) => o.status === "scheduled" && o.addressOk).length;
+
+  const shown = orders.filter((o) =>
+    filter === "all" ? true : filter === "scheduled" ? o.status === "scheduled" : o.status !== "scheduled",
+  );
 
   async function toPen(id: string) {
     setBusy(id);
+    setErrors((e) => ({ ...e, [id]: "" }));
     try {
       const res = await fetch(`/api/fulfillment/${id}`, { method: "POST" });
       const data = await res.json().catch(() => ({}));
       if (data.ok) {
         setResults((r) => ({ ...r, [id]: data.message }));
         router.refresh();
+      } else {
+        setErrors((e) => ({ ...e, [id]: data.error ?? "Could not send." }));
       }
     } finally {
       setBusy(null);
     }
   }
+
+  async function sendAllReady() {
+    setBulkBusy(true);
+    setBanner(null);
+    try {
+      const res = await fetch("/api/fulfillment/bulk", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (data.ok) {
+        setBanner(`Sent ${data.sent} to the auto-pen${data.skipped ? ` · ${data.skipped} skipped (address needs fixing)` : ""}.`);
+        router.refresh();
+      }
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  const tabs: { id: Filter; label: string }[] = [
+    { id: "all", label: "All" },
+    { id: "scheduled", label: "Scheduled" },
+    { id: "production", label: "In production" },
+  ];
 
   return (
     <>
@@ -52,26 +97,50 @@ export function FulfillmentQueue({ orders, provider }: { orders: Order[]; provid
         <div className="text-sm text-pine-600">
           Handwriting provider:{" "}
           <span className="font-semibold text-pine-800">{PROVIDER_LABEL[provider] ?? provider}</span>
-          <span className="ml-2 rounded-full bg-pine-50 px-2 py-0.5 text-xs text-pine-500">
-            {orders.length} open order{orders.length === 1 ? "" : "s"}
-          </span>
         </div>
-        <button
-          onClick={() => window.location.assign("/api/fulfillment/export")}
-          className="rounded-full border border-pine-300 px-4 py-2 text-sm font-semibold text-pine-700 transition hover:bg-pine-50"
-        >
-          ↓ Export CSV
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={sendAllReady}
+            disabled={bulkBusy || readyCount === 0}
+            className="rounded-full bg-pine-700 px-4 py-2 text-sm font-semibold text-cream transition hover:bg-pine-600 disabled:opacity-50"
+          >
+            {bulkBusy ? "Sending…" : `✍️ Send all ready (${readyCount})`}
+          </button>
+          <button
+            onClick={() => window.location.assign("/api/fulfillment/export")}
+            className="rounded-full border border-pine-300 px-4 py-2 text-sm font-semibold text-pine-700 transition hover:bg-pine-50"
+          >
+            ↓ Export CSV
+          </button>
+        </div>
       </div>
 
-      {orders.length === 0 && (
+      {banner && (
+        <p className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-700">{banner}</p>
+      )}
+
+      <div className="mb-4 flex gap-2">
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setFilter(t.id)}
+            className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
+              filter === t.id ? "bg-pine-700 text-cream" : "bg-pine-50 text-pine-700 hover:bg-pine-100"
+            }`}
+          >
+            {t.label} <span className="opacity-70">{counts[t.id]}</span>
+          </button>
+        ))}
+      </div>
+
+      {shown.length === 0 && (
         <p className="rounded-2xl border border-pine-100 bg-white p-10 text-center text-sm text-pine-500 shadow-card">
-          Nothing in the production queue right now.
+          Nothing here right now.
         </p>
       )}
 
       <div className="grid gap-4 lg:grid-cols-2">
-        {orders.map((o) => (
+        {shown.map((o) => (
           <div key={o.id} className="flex flex-col rounded-2xl border border-pine-100 bg-white p-5 shadow-card">
             <div className="flex items-start gap-3">
               <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-pine-50 text-xl">{o.emoji}</span>
@@ -85,10 +154,10 @@ export function FulfillmentQueue({ orders, provider }: { orders: Order[]; provid
             <div className="mt-3 space-y-2 text-sm">
               <div>
                 <span className="text-xs font-medium uppercase tracking-wide text-pine-400">Ship to</span>
-                {o.addressMissing ? (
-                  <p className="text-berry-500">⚠ No mailing address on file</p>
-                ) : (
+                {o.addressOk ? (
                   <p className="text-pine-700">{o.address}</p>
+                ) : (
+                  <p className="text-berry-500">⚠ {o.addressIssue ?? "Address needs fixing"}</p>
                 )}
               </div>
               <div>
@@ -108,14 +177,17 @@ export function FulfillmentQueue({ orders, provider }: { orders: Order[]; provid
               {results[o.id] ? (
                 <span className="text-xs font-medium text-emerald-600">✓ {results[o.id]}</span>
               ) : o.status === "scheduled" ? (
-                <button
-                  onClick={() => toPen(o.id)}
-                  disabled={busy === o.id || o.addressMissing}
-                  className="rounded-full bg-pine-700 px-4 py-1.5 text-xs font-semibold text-cream transition hover:bg-pine-600 disabled:opacity-50"
-                  title={o.addressMissing ? "Add a mailing address first" : undefined}
-                >
-                  {busy === o.id ? "Sending…" : "✍️ Send to auto-pen"}
-                </button>
+                <div className="flex flex-col items-end gap-1">
+                  <button
+                    onClick={() => toPen(o.id)}
+                    disabled={busy === o.id || !o.addressOk}
+                    className="rounded-full bg-pine-700 px-4 py-1.5 text-xs font-semibold text-cream transition hover:bg-pine-600 disabled:opacity-50"
+                    title={!o.addressOk ? "Fix the mailing address first" : undefined}
+                  >
+                    {busy === o.id ? "Sending…" : "✍️ Send to auto-pen"}
+                  </button>
+                  {errors[o.id] && <span className="text-xs text-berry-500">{errors[o.id]}</span>}
+                </div>
               ) : (
                 <span className="text-xs font-medium text-gold-600">In production</span>
               )}

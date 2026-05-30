@@ -5,6 +5,7 @@ import { requireUserId } from "@/lib/auth";
 import { getProduct } from "@/lib/catalog";
 import { listRecipients, listSends } from "@/lib/db";
 import { activeProvider } from "@/lib/handwriting";
+import { checkFormat } from "@/lib/address";
 import { formatAddress } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -22,12 +23,13 @@ export default async function FulfillmentPage() {
     .map((s) => {
       const r = recipients.find((x) => x.id === s.recipientId);
       const p = getProduct(s.giftId);
-      const address = r ? formatAddress(r) : "";
+      const issues = r ? checkFormat(r) : ["No recipient on file."];
       return {
         id: s.id,
         recipientName: r ? `${r.firstName} ${r.lastName}` : "Unknown",
-        address,
-        addressMissing: !r?.address1,
+        address: r ? formatAddress(r) : "",
+        addressOk: issues.length === 0,
+        addressIssue: issues[0],
         gift: p?.name ?? "Gift",
         emoji: p?.emoji ?? "🎁",
         occasion: s.occasion,

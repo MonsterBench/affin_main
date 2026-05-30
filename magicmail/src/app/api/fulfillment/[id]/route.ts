@@ -3,6 +3,7 @@ import { requireUserId } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { applySendAction } from "@/lib/db";
 import { submitHandwriting } from "@/lib/handwriting";
+import { validateAddress } from "@/lib/address";
 import { getProduct } from "@/lib/catalog";
 import { formatAddress } from "@/lib/types";
 
@@ -17,18 +18,27 @@ export async function POST(_req: Request, ctx: RouteContext<"/api/fulfillment/[i
   if (!send) return NextResponse.json({ error: "not found" }, { status: 404 });
 
   const r = send.recipient;
+
+  // Never mail to an unvalidated address.
+  const check = await validateAddress(r);
+  if (!check.ok) {
+    return NextResponse.json({ error: check.issues.join(" ") || "Invalid address." }, { status: 422 });
+  }
+  const addr = check.normalized ?? r;
+  const address2 = addr.address2 ?? "";
+
   const result = await submitHandwriting({
     sendId: send.id,
     recipientName: `${r.firstName} ${r.lastName}`,
-    address: formatAddress(r),
+    address: formatAddress({ ...addr, address2 }),
     recipient: {
       name: `${r.firstName} ${r.lastName}`,
-      address1: r.address1,
-      address2: r.address2,
-      city: r.city,
-      state: r.state,
-      zip: r.zip,
-      country: r.country,
+      address1: addr.address1,
+      address2,
+      city: addr.city,
+      state: addr.state,
+      zip: addr.zip,
+      country: addr.country ?? "US",
     },
     note: send.note,
     style: getProduct(send.giftId)?.category === "letter" ? "santa-script" : "casual-script",
