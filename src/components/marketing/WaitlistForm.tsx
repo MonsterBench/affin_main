@@ -26,22 +26,27 @@ export function WaitlistForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="mx-auto mt-8 flex max-w-md flex-col gap-3 sm:flex-row">
-      <input
-        type="email"
-        required
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        placeholder="you@example.com"
-        className="flex-1 rounded-full border border-cream/20 bg-cream/10 px-5 py-3 text-cream placeholder:text-cream/50 focus:border-gold-300 focus:outline-none"
-      />
-      <button
-        type="submit"
-        disabled={state === "loading"}
-        className="rounded-full bg-gold-300 px-6 py-3 font-semibold text-pine-900 transition hover:bg-gold-200 disabled:opacity-60"
-      >
-        {state === "loading" ? "Joining…" : "Join waitlist"}
-      </button>
-    </form>
+    <div className="mx-auto mt-8 max-w-md">
+      <form onSubmit={onSubmit} className="flex flex-col gap-3 sm:flex-row">
+        <input
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@example.com"
+          className="flex-1 rounded-full border border-cream/20 bg-cream/10 px-5 py-3 text-cream placeholder:text-cream/50 focus:border-gold-300 focus:outline-none"
+        />
+        <button
+          type="submit"
+          disabled={state === "loading"}
+          className="rounded-full bg-gold-300 px-6 py-3 font-semibold text-pine-900 transition hover:bg-gold-200 disabled:opacity-60"
+        >
+          {state === "loading" ? "Joining…" : "Join waitlist"}
+        </button>
+      </form>
+      {state === "error" && (
+        <p className="mt-3 text-sm text-gold-200">Something went wrong — please try again.</p>
+      )}
+    </div>
   );
 }

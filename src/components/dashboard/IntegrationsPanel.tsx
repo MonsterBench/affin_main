@@ -59,12 +59,15 @@ export function IntegrationsPanel({
   async function rotate() {
     if (!confirm("Rotate the API key? Existing integrations using the old key will stop working.")) return;
     setRotating(true);
-    const res = await fetch("/api/integrations/key", { method: "POST" });
-    const data = await res.json();
-    setRotating(false);
-    if (data.apiKey) {
-      setApiKey(data.apiKey);
-      setRevealed(true);
+    try {
+      const res = await fetch("/api/integrations/key", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (data.apiKey) {
+        setApiKey(data.apiKey);
+        setRevealed(true);
+      }
+    } finally {
+      setRotating(false);
     }
   }
 

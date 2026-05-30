@@ -68,7 +68,7 @@ function templateNote(req: NoteRequest): string {
   const n = req.firstName;
   switch (req.occasion) {
     case "holiday":
-      return `Dear ${n},\n\nIt's me — Santa! All the way up at the North Pole, the elves and I have been keeping an eye out, and you're right at the top of the Nice List. Keep being kind and curious${req.details ? `, and keep loving ${req.details}` : ""}. A little magic is on its way to you.\n\nWith Christmas cheer,\nSanta 🎅`;
+      return `Dear ${n},\n\nIt's me — Santa! All the way up at the North Pole, the elves and I have been keeping an eye out, and you're right at the top of the Nice List. Keep being kind and curious. A little magic is on its way to you.\n\nWith Christmas cheer,\nSanta 🎅`;
     case "birthday":
       return `Happy birthday, ${n}! 🎉 Wishing you a day as wonderful as you are, full of laughter and the people you love. Here's to a fantastic year ahead.`;
     case "closing":

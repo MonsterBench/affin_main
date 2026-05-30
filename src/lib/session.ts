@@ -3,9 +3,14 @@ import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
 
 const COOKIE = "kringle_session";
-const secret = new TextEncoder().encode(
-  process.env.AUTH_SECRET || "dev-kringle-secret-change-me",
-);
+
+// Require a real secret in production — never fall back to a public constant,
+// or anyone could forge session tokens and impersonate any user.
+const rawSecret = process.env.AUTH_SECRET;
+if (!rawSecret && process.env.NODE_ENV === "production") {
+  throw new Error("AUTH_SECRET must be set in production");
+}
+const secret = new TextEncoder().encode(rawSecret || "dev-only-insecure-secret");
 
 export interface SessionPayload {
   userId: string;
