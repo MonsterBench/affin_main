@@ -28,6 +28,20 @@ model User {
   recipients           Recipient[]
   automations          Automation[]
   sends                Send[]
+  integrationEvents    IntegrationEvent[]
+}
+
+model IntegrationEvent {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  source       String // zapier | follow-up-boss | api
+  event        String // occasion / event name
+  summary      String
+  sendsCreated Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
 }
 
 model Recipient {

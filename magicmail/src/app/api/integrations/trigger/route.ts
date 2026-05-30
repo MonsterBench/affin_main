@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { triggerFromEvent, userIdForApiKey } from "@/lib/db";
+import { triggerFromEvent, userIdForApiKey, logIntegrationEvent } from "@/lib/db";
 import { OCCASION_LABELS, type OccasionType } from "@/lib/types";
 
 // Public inbound webhook for CRMs and Zapier.
@@ -45,16 +45,17 @@ export async function POST(req: Request) {
     date: body.date ? String(body.date) : undefined,
   });
 
-  return NextResponse.json(
-    {
-      ok: true,
-      recipientId: result.recipientId,
-      scheduled: result.scheduled,
-      message:
-        result.matchedAutomations > 0
-          ? `Scheduled ${result.matchedAutomations} gift(s).`
-          : "Recipient saved. No active automation matched this event yet.",
-    },
-    { status: 200 },
-  );
+  const message =
+    result.matchedAutomations > 0
+      ? `Scheduled ${result.matchedAutomations} gift(s).`
+      : "Recipient saved. No active automation matched this event yet.";
+
+  await logIntegrationEvent(userId, {
+    source: "api",
+    event: occasion,
+    summary: `${body.firstName} ${body.lastName} — ${message}`,
+    sendsCreated: result.matchedAutomations,
+  });
+
+  return NextResponse.json({ ok: true, recipientId: result.recipientId, scheduled: result.scheduled, message }, { status: 200 });
 }
