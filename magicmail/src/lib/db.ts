@@ -350,7 +350,8 @@ export async function computeMetrics(userId: string): Promise<DashboardMetrics> 
     deliveredThisYear: sends.filter(
       (s) =>
         s.status === "delivered" &&
-        new Date(s.deliveredOn ?? s.scheduledFor).getFullYear() === now.getFullYear(),
+        // Parse the yyyy-mm-dd as local time, not UTC, to avoid year-boundary drift.
+        new Date((s.deliveredOn ?? s.scheduledFor) + "T00:00:00").getFullYear() === now.getFullYear(),
     ).length,
     revenueScheduled: inFlight.reduce((sum, s) => sum + (getProduct(s.giftId)?.price ?? 0), 0),
     marginRate: revenue > 0 ? (revenue - cost) / revenue : 0,
@@ -380,9 +381,11 @@ export async function nextGiftForRecipient(
   anchorGiftId: string,
 ): Promise<string> {
   const anchor = getProduct(anchorGiftId);
+  // If the anchor gift is unknown, don't rotate across unrelated categories.
+  if (!anchor) return anchorGiftId;
   const used = await giftsSentTo(userId, recipientId);
-  const pool = CATALOG.filter((p) => p.category === anchor?.category);
-  const candidates = (pool.length ? pool : CATALOG).filter((p) => !used.has(p.id));
+  const pool = CATALOG.filter((p) => p.category === anchor.category);
+  const candidates = pool.filter((p) => !used.has(p.id));
   return candidates[0]?.id ?? anchorGiftId;
 }
 
@@ -505,8 +508,12 @@ export async function updateDeliveryStatus(
   sendId: string,
   status: SendStatus,
   trackingNumber?: string,
+  scopeUserId?: string, // when set, only this account's sends may be updated
 ): Promise<{ ok: boolean; ownerEmail?: string; recipientName?: string }> {
-  const send = await prisma.send.findUnique({ where: { id: sendId }, include: { user: true, recipient: true } });
+  const send = await prisma.send.findFirst({
+    where: { id: sendId, ...(scopeUserId ? { userId: scopeUserId } : {}) },
+    include: { user: true, recipient: true },
+  });
   if (!send) return { ok: false };
   await prisma.send.update({
     where: { id: sendId },
@@ -576,6 +583,16 @@ export async function triggerFromEvent(userId: string, input: TriggerInput): Pro
         importantDates: { create: [{ occasion: input.occasion, date: occasionDate }] },
       },
     });
+  } else {
+    // Existing recipient: record this occasion's date if we don't have it yet.
+    const has = await prisma.importantDate.findFirst({
+      where: { recipientId: recipient.id, occasion: input.occasion },
+    });
+    if (!has) {
+      await prisma.importantDate.create({
+        data: { recipientId: recipient.id, occasion: input.occasion, date: occasionDate },
+      });
+    }
   }
 
   // Match active automations for this occasion + audience/tag filters.

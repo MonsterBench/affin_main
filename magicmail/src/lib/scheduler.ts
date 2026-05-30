@@ -2,7 +2,7 @@ import "server-only";
 import { prisma } from "./prisma";
 import { applySendAction, nextGiftForRecipient } from "./db";
 import { submitHandwriting } from "./handwriting";
-import { sendEmail, brandedEmail } from "./email";
+import { sendEmail, brandedEmail, escapeHtml } from "./email";
 import { getProduct } from "./catalog";
 import { formatAddress, type Cadence } from "./types";
 import { appUrl } from "./urls";
@@ -37,15 +37,15 @@ export function nextCadenceDate(cadence: Cadence, from = new Date()): string {
     d.setFullYear(d.getFullYear() + 1);
     return d.toISOString().slice(0, 10);
   }
-  // quarterly → the 15th of the next Top-of-Mind announce month.
-  let year = d.getFullYear();
-  const month = QUARTER_MONTHS.find((m) => m > d.getMonth());
-  let target = month;
-  if (target === undefined) {
-    target = QUARTER_MONTHS[0];
-    year += 1;
+  // quarterly → the 15th of the next Top-of-Mind announce month strictly after
+  // today (so the current announce month still counts until the 15th passes).
+  for (const year of [d.getFullYear(), d.getFullYear() + 1]) {
+    for (const m of QUARTER_MONTHS) {
+      const candidate = new Date(year, m, 15);
+      if (candidate > d) return candidate.toISOString().slice(0, 10);
+    }
   }
-  return new Date(year, target, 15).toISOString().slice(0, 10);
+  return new Date(d.getFullYear() + 1, QUARTER_MONTHS[0], 15).toISOString().slice(0, 10);
 }
 
 export interface SchedulerSummary {
@@ -126,7 +126,7 @@ async function notifyUpcoming(scope: { userId?: string }): Promise<number> {
       subject: `A gift for ${s.recipient.firstName} mails ${s.scheduledFor}`,
       html: brandedEmail(
         "A touch is going out soon ✨",
-        `“${p?.name ?? "A gift"}” for <b>${s.recipient.firstName} ${s.recipient.lastName}</b> is scheduled to mail on <b>${s.scheduledFor}</b>. Need to change it? You can pause, skip, delay, or expedite it from your pipeline.`,
+        `“${escapeHtml(p?.name ?? "A gift")}” for <b>${escapeHtml(`${s.recipient.firstName} ${s.recipient.lastName}`)}</b> is scheduled to mail on <b>${s.scheduledFor}</b>. Need to change it? You can pause, skip, delay, or expedite it from your pipeline.`,
         { label: "Review this touch", url: appUrl("/dashboard/sends") },
       ),
     });

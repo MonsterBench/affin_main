@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { updateDeliveryStatus, userIdForApiKey } from "@/lib/db";
-import { sendEmail, brandedEmail } from "@/lib/email";
+import { sendEmail, brandedEmail, escapeHtml } from "@/lib/email";
 import { appUrl } from "@/lib/urls";
 import { STATUS_LABELS, type SendStatus } from "@/lib/types";
 
@@ -15,9 +15,11 @@ export async function POST(req: Request) {
   const bearer = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
   const apiKey = req.headers.get("x-api-key") ?? "";
 
-  const authorized =
-    (secret && bearer === secret) || (await userIdForApiKey(apiKey)) !== null;
-  if (!authorized) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  // The global provider secret can update any send. An account API key may only
+  // update that account's own sends (scopeUserId), preventing cross-tenant writes.
+  const secretOk = Boolean(secret && bearer === secret);
+  const keyUserId = secretOk ? null : await userIdForApiKey(apiKey);
+  if (!secretOk && !keyUserId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const body = await req.json().catch(() => ({}));
   const sendId = String(body?.sendId ?? "");
@@ -27,7 +29,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: `status must be one of: ${ALLOWED.join(", ")}` }, { status: 400 });
   }
 
-  const result = await updateDeliveryStatus(sendId, status, body?.trackingNumber ? String(body.trackingNumber) : undefined);
+  const result = await updateDeliveryStatus(
+    sendId,
+    status,
+    body?.trackingNumber ? String(body.trackingNumber) : undefined,
+    keyUserId ?? undefined,
+  );
   if (!result.ok) return NextResponse.json({ error: "send not found" }, { status: 404 });
 
   // Notify the owner when a gift lands.
@@ -37,7 +44,7 @@ export async function POST(req: Request) {
       subject: `Delivered: your gift for ${result.recipientName} 🎉`,
       html: brandedEmail(
         "Delivered! 🎉",
-        `Your gift for <b>${result.recipientName}</b> was just delivered. A little magic, on its way to making someone's day.`,
+        `Your gift for <b>${escapeHtml(result.recipientName ?? "")}</b> was just delivered. A little magic, on its way to making someone's day.`,
         { label: "View in dashboard", url: appUrl("/dashboard/sends") },
       ),
     });

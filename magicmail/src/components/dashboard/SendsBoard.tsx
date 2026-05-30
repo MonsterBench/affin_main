@@ -143,7 +143,10 @@ export function SendsBoard({
     <>
       <div className="flex justify-end">
         <button
-          onClick={() => setOpen(true)}
+          onClick={() => {
+            setNote("");
+            setOpen(true);
+          }}
           className="rounded-full bg-pine-700 px-4 py-2 text-sm font-semibold text-cream shadow-card transition hover:bg-pine-600"
         >
           + New send
@@ -181,7 +184,14 @@ export function SendsBoard({
         ))}
       </div>
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Create a send">
+      <Modal
+        open={open}
+        onClose={() => {
+          setOpen(false);
+          setNote("");
+        }}
+        title="Create a send"
+      >
         <form ref={formRef} onSubmit={onSubmit} className="space-y-4">
           <div>
             <label className={labelClass}>Recipient</label>
@@ -237,7 +247,10 @@ export function SendsBoard({
           <div className="flex justify-end gap-3 pt-2">
             <button
               type="button"
-              onClick={() => setOpen(false)}
+              onClick={() => {
+                setOpen(false);
+                setNote("");
+              }}
               className="rounded-full px-4 py-2 text-sm font-medium text-pine-600 hover:bg-pine-50"
             >
               Cancel

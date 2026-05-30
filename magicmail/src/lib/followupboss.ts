@@ -7,8 +7,6 @@ import type { OccasionType } from "./types";
 // from the FUB API using the account's API key (HTTP Basic, key as username).
 // We map common FUB events to Kringle occasions and extract contact details.
 
-const FUB_BASE = "https://api.followupboss.com/v1";
-
 export function mapFubEvent(event: string, stage?: string): OccasionType | null {
   const e = event.toLowerCase();
   const s = (stage ?? "").toLowerCase();
@@ -38,8 +36,15 @@ interface FubPerson {
 }
 
 export async function fetchFubResource(uri: string, apiKey: string): Promise<FubContact | null> {
-  // Only allow fetching from the FUB API host.
-  if (!uri.startsWith(FUB_BASE)) return null;
+  // Only allow the exact FUB API host — a prefix check (startsWith) would let
+  // "api.followupboss.com.evil.com" through and leak the API key (SSRF).
+  let parsed: URL;
+  try {
+    parsed = new URL(uri);
+  } catch {
+    return null;
+  }
+  if (parsed.protocol !== "https:" || parsed.hostname !== "api.followupboss.com") return null;
   try {
     const res = await fetch(uri, {
       headers: { Authorization: `Basic ${Buffer.from(`${apiKey}:`).toString("base64")}` },

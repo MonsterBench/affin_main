@@ -13,11 +13,15 @@ export async function POST(req: Request) {
   const sig = req.headers.get("stripe-signature");
   const body = await req.text();
 
+  // If Stripe is configured, the webhook signature is mandatory — never trust an
+  // unsigned/forged body (it could grant plans or fabricate unpaid gift orders).
+  if (!secret || !sig) {
+    return NextResponse.json({ error: "webhook signature required" }, { status: 400 });
+  }
+
   let event: Stripe.Event;
   try {
-    event = secret && sig
-      ? stripe.webhooks.constructEvent(body, sig, secret)
-      : (JSON.parse(body) as Stripe.Event);
+    event = stripe.webhooks.constructEvent(body, sig, secret);
   } catch {
     return NextResponse.json({ error: "invalid signature" }, { status: 400 });
   }

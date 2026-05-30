@@ -37,7 +37,8 @@ export async function POST(req: Request) {
     state: String(b.state),
     zip: String(b.zip),
     country: b.country ? String(b.country) : "US",
-    note: String(b.note ?? ""),
+    // Cap to Stripe's 500-char metadata limit (live mode passes this via metadata).
+    note: String(b.note ?? "").slice(0, 500),
   };
 
   // Demo mode: no Stripe keys → place the order now.
