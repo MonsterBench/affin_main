@@ -41,6 +41,26 @@ export function SendsBoard({ rows, recipients }: { rows: Row[]; recipients: Reci
     router.refresh();
   }
 
+  // One-click repeat: schedule the same gift to the same recipient again.
+  async function sendAgain(s: Row) {
+    setBusy(`${s.id}:again`);
+    const mailDate = new Date();
+    mailDate.setDate(mailDate.getDate() + 2);
+    await fetch("/api/sends", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        recipientId: s.recipientId,
+        giftId: s.giftId,
+        occasion: s.occasion,
+        scheduledFor: mailDate.toISOString().slice(0, 10),
+        note: s.note,
+      }),
+    });
+    setBusy(null);
+    router.refresh();
+  }
+
   const Pill = ({ id, action, label, primary }: { id: string; action: SendAction; label: string; primary?: boolean }) => (
     <button
       onClick={() => act(id, action)}
@@ -54,7 +74,19 @@ export function SendsBoard({ rows, recipients }: { rows: Row[]; recipients: Reci
   );
 
   function controls(s: Row) {
-    if (s.status === "delivered") return <span className="px-2 text-xs font-medium text-emerald-600">✓ Delivered</span>;
+    if (s.status === "delivered")
+      return (
+        <div className="flex items-center gap-2">
+          <span className="px-1 text-xs font-medium text-emerald-600">✓ Delivered</span>
+          <button
+            onClick={() => sendAgain(s)}
+            disabled={busy !== null}
+            className="rounded-full border border-pine-300 px-3 py-1.5 text-xs font-semibold text-pine-700 transition hover:bg-pine-50 disabled:opacity-50"
+          >
+            {busy === `${s.id}:again` ? "…" : "↻ Send again"}
+          </button>
+        </div>
+      );
     if (s.status === "skipped") return <span className="px-2 text-xs font-medium text-pine-400">Skipped</span>;
     if (s.status === "paused")
       return (
