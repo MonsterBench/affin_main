@@ -8,7 +8,7 @@ import { OccasionBadge, StatusBadge } from "@/components/ui/Badge";
 import { getCurrentUser } from "@/lib/auth";
 import { getProduct } from "@/lib/catalog";
 import { currency, shortDate } from "@/lib/format";
-import { computeMetrics, listAutomations, listRecipients, listSends } from "@/lib/db";
+import { computeMetrics, listAutomations, listRecipients, listSends, reactionsForUser } from "@/lib/db";
 import { getSuggestions } from "@/lib/memory";
 import { SuggestionsCard } from "@/components/dashboard/SuggestionsCard";
 import { STATUS_LABELS, STATUS_ORDER } from "@/lib/types";
@@ -21,12 +21,13 @@ export default async function OverviewPage() {
   if (!user) redirect("/login");
   const userId = user.id;
 
-  const [m, sends, automations, recipients, suggestions] = await Promise.all([
+  const [m, sends, automations, recipients, suggestions, reactions] = await Promise.all([
     computeMetrics(userId),
     listSends(userId),
     listAutomations(userId),
     listRecipients(userId),
     getSuggestions(userId, 5),
+    reactionsForUser(userId, 5),
   ]);
   const recipientLites = recipients.map((r) => ({
     id: r.id,
@@ -76,8 +77,35 @@ export default async function OverviewPage() {
         />
       </div>
 
-      <div className="mt-8">
-        <SuggestionsCard suggestions={suggestions} recipients={recipientLites} />
+      <div className="mt-8 grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <SuggestionsCard suggestions={suggestions} recipients={recipientLites} />
+        </div>
+        <div className="rounded-2xl border border-pine-100 bg-white p-6 shadow-card">
+          <h2 className="font-display text-lg font-semibold text-pine-800">💌 Reactions</h2>
+          <p className="text-xs text-pine-500">How your gifts landed.</p>
+          {reactions.length === 0 ? (
+            <p className="mt-5 rounded-xl bg-pine-50 px-4 py-5 text-center text-sm text-pine-500">
+              No reactions yet — they appear when recipients scan their keepsake QR.
+            </p>
+          ) : (
+            <ul className="mt-4 space-y-3">
+              {reactions.map((r, i) => (
+                <li key={i} className="flex items-start gap-3 text-sm">
+                  <span className="text-xl">{r.emoji ?? "💌"}</span>
+                  <div className="min-w-0">
+                    <p className="text-pine-700">
+                      {r.message ? `“${r.message}”` : "Reacted"}
+                    </p>
+                    <p className="text-xs text-pine-400">
+                      {r.fromName ? `${r.fromName} · ` : ""}for {r.recipientName}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-3">

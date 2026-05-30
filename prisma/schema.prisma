@@ -123,6 +123,7 @@ model Send {
   dispatchedAt    DateTime? // when it was handed to the provider
   automationId    String?
   createdAt       DateTime  @default(now())
+  reactions       Reaction[]
 
   @@index([userId])
   @@index([recipientId])
@@ -133,4 +134,18 @@ model WaitlistEntry {
   email     String   @unique
   source    String?
   createdAt DateTime @default(now())
+}
+
+// A reaction left by the recipient on the QR keepsake page, flowing back to
+// the sender. Closes the emotional loop and drives organic growth.
+model Reaction {
+  id         String   @id @default(cuid())
+  sendId     String
+  send       Send     @relation(fields: [sendId], references: [id], onDelete: Cascade)
+  emoji      String? // a quick reaction
+  message    String? // optional thank-you note
+  fromName   String? // who left it (e.g. the parent)
+  createdAt  DateTime @default(now())
+
+  @@index([sendId])
 }

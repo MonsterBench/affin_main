@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
+import { ReactionForm } from "@/components/marketing/ReactionForm";
 import { getMagicExperience } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -69,6 +70,10 @@ export default async function MagicPage({ params }: { params: Promise<{ token: s
             </div>
           </div>
         )}
+
+        <div className="mt-8">
+          <ReactionForm token={token} childName={exp.childName} done={exp.hasReaction} />
+        </div>
 
         <p className="mt-10 text-sm text-cream/70">
           Want to send a little magic to someone you love?{" "}

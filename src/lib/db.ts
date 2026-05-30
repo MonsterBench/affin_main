@@ -792,23 +792,75 @@ export async function createGuestOrder(input: GuestOrderInput): Promise<{ sendId
 }
 
 export interface MagicExperience {
+  sendId: string;
   childName: string;
   note: string;
   giftName: string;
   videoStatus: string;
   videoUrl?: string;
+  hasReaction: boolean;
 }
 
 export async function getMagicExperience(token: string): Promise<MagicExperience | null> {
-  const send = await prisma.send.findUnique({ where: { magicToken: token }, include: { recipient: true } });
+  const send = await prisma.send.findUnique({
+    where: { magicToken: token },
+    include: { recipient: true, reactions: true },
+  });
   if (!send) return null;
   return {
+    sendId: send.id,
     childName: send.recipient.firstName,
     note: send.note,
     giftName: getProduct(send.giftId)?.name ?? "a gift",
     videoStatus: send.videoStatus,
     videoUrl: send.videoUrl ?? undefined,
+    hasReaction: send.reactions.length > 0,
   };
+}
+
+export interface ReactionRow {
+  emoji?: string;
+  message?: string;
+  fromName?: string;
+  createdAt: string;
+}
+
+// Records a recipient reaction by magic token (public, no auth).
+export async function addReactionByToken(
+  token: string,
+  input: { emoji?: string; message?: string; fromName?: string },
+): Promise<boolean> {
+  const send = await prisma.send.findUnique({ where: { magicToken: token } });
+  if (!send) return false;
+  if (!input.emoji && !input.message) return false;
+  await prisma.reaction.create({
+    data: {
+      sendId: send.id,
+      emoji: input.emoji,
+      message: input.message?.slice(0, 500),
+      fromName: input.fromName?.slice(0, 80),
+    },
+  });
+  return true;
+}
+
+// Reactions for a user's sends, newest first — surfaced back to the sender.
+export async function reactionsForUser(userId: string, limit = 20): Promise<(ReactionRow & { sendId: string; recipientName: string; giftName: string })[]> {
+  const rows = await prisma.reaction.findMany({
+    where: { send: { userId } },
+    include: { send: { include: { recipient: true } } },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+  });
+  return rows.map((r) => ({
+    sendId: r.sendId,
+    emoji: r.emoji ?? undefined,
+    message: r.message ?? undefined,
+    fromName: r.fromName ?? undefined,
+    createdAt: r.createdAt.toISOString(),
+    recipientName: `${r.send.recipient.firstName} ${r.send.recipient.lastName}`,
+    giftName: getProduct(r.send.giftId)?.name ?? "a gift",
+  }));
 }
 
 export async function setVideoByToken(token: string, videoUrl: string, status = "ready"): Promise<boolean> {
