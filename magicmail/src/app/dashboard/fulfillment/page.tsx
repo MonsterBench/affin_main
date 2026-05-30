@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/dashboard/PageHeader";
 import { FulfillmentQueue, type Order } from "@/components/dashboard/FulfillmentQueue";
 import { requireUserId } from "@/lib/auth";
 import { getProduct } from "@/lib/catalog";
-import { listRecipients, listSends } from "@/lib/db";
+import { listRecipients, listSends, magicTokensForUser } from "@/lib/db";
 import { activeProvider } from "@/lib/handwriting";
 import { checkFormat } from "@/lib/address";
 import { formatAddress } from "@/lib/types";
@@ -17,6 +17,7 @@ export default async function FulfillmentPage() {
   if (!userId) redirect("/login");
 
   const [sends, recipients] = await Promise.all([listSends(userId), listRecipients(userId)]);
+  const tokens = await magicTokensForUser(userId);
 
   const orders: Order[] = sends
     .filter((s) => FULFILLABLE.includes(s.status))
@@ -37,6 +38,7 @@ export default async function FulfillmentPage() {
         status: s.status,
         scheduledFor: s.scheduledFor,
         note: s.note,
+        magicToken: tokens[s.id],
       };
     });
 

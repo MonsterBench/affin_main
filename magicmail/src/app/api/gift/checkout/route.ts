@@ -43,8 +43,8 @@ export async function POST(req: Request) {
 
   // Demo mode: no Stripe keys → place the order now.
   if (!billingIsLive || !stripe) {
-    await createGuestOrder(order);
-    return NextResponse.json({ demo: true, redirect: "/gift/success?demo=1" });
+    const { magicToken } = await createGuestOrder(order);
+    return NextResponse.json({ demo: true, redirect: `/gift/success?token=${magicToken}` });
   }
 
   const session = await stripe.checkout.sessions.create({
