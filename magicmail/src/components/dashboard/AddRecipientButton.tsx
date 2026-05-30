@@ -23,8 +23,12 @@ export function AddRecipientButton() {
       audience: form.get("audience"),
       company: form.get("company"),
       email: form.get("email"),
+      address1: form.get("address1"),
+      address2: form.get("address2"),
       city: form.get("city"),
       state: form.get("state"),
+      zip: form.get("zip"),
+      country: form.get("country") || "US",
       tags: String(form.get("tags") || "")
         .split(",")
         .map((t) => t.trim())
@@ -81,14 +85,25 @@ export function AddRecipientButton() {
             <label className={labelClass}>Email (optional)</label>
             <input name="email" type="email" className={fieldClass} placeholder="emma@example.com" />
           </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="col-span-2">
+          <div>
+            <label className={labelClass}>Mailing address</label>
+            <input name="address1" className={fieldClass} placeholder="123 Maple Street" />
+          </div>
+          <div>
+            <input name="address2" className={fieldClass} placeholder="Apt, suite (optional)" />
+          </div>
+          <div className="grid grid-cols-6 gap-3">
+            <div className="col-span-3">
               <label className={labelClass}>City</label>
               <input name="city" className={fieldClass} placeholder="Asheville" />
             </div>
-            <div>
+            <div className="col-span-1">
               <label className={labelClass}>State</label>
               <input name="state" className={fieldClass} placeholder="NC" maxLength={2} />
+            </div>
+            <div className="col-span-2">
+              <label className={labelClass}>ZIP</label>
+              <input name="zip" className={fieldClass} placeholder="28801" />
             </div>
           </div>
           <div>

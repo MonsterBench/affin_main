@@ -19,13 +19,13 @@ export async function seedDemoDataFor(userId: string): Promise<void> {
 
   const recipientData = [
     {
-      firstName: "Emma", lastName: "Hollis", audience: "kid", city: "Asheville", state: "NC",
+      firstName: "Emma", lastName: "Hollis", audience: "kid", address1: "14 Sycamore Ln", city: "Asheville", state: "NC", zip: "28801",
       tags: "holiday-list,age-6", notes: "Loves dinosaurs and her dog Biscuit.",
       dates: [{ occasion: "holiday", date: "2026-12-24" }, { occasion: "birthday", date: "2026-06-12" }],
     },
     {
       firstName: "Marcus", lastName: "Reed", audience: "client", company: "Reed & Co. Realty",
-      email: "marcus@reedco.com", city: "Charlotte", state: "NC", tags: "vip,real-estate",
+      email: "marcus@reedco.com", address1: "880 Tryon St", city: "Charlotte", state: "NC", zip: "28202", tags: "vip,real-estate",
       dates: [
         { occasion: "closing", date: days(5), label: "412 Maple St closing" },
         { occasion: "birthday", date: "2026-09-02" },
@@ -33,31 +33,31 @@ export async function seedDemoDataFor(userId: string): Promise<void> {
     },
     {
       firstName: "Priya", lastName: "Nair", audience: "employee", company: "Northstar Advisors",
-      email: "priya@northstar.com", city: "Austin", state: "TX", tags: "team,anniversary-q2",
+      email: "priya@northstar.com", address1: "2200 Congress Ave", city: "Austin", state: "TX", zip: "78701", tags: "team,anniversary-q2",
       dates: [{ occasion: "work_anniversary", date: days(16) }, { occasion: "birthday", date: "2026-07-22" }],
     },
     {
       firstName: "Daniel", lastName: "Okafor", audience: "client", company: "Okafor Wealth",
-      email: "dan@okaforwealth.com", city: "Atlanta", state: "GA", tags: "vip,finance",
+      email: "dan@okaforwealth.com", address1: "55 Peachtree Rd", city: "Atlanta", state: "GA", zip: "30303", tags: "vip,finance",
       dates: [{ occasion: "milestone", date: days(9), label: "10-year client" }],
     },
     {
       firstName: "Sofia", lastName: "Marin", audience: "prospect", company: "Marin Interiors",
-      email: "sofia@marininteriors.com", city: "Miami", state: "FL", tags: "lead,design",
+      email: "sofia@marininteriors.com", address1: "700 Ocean Dr", city: "Miami", state: "FL", zip: "33139", tags: "lead,design",
       dates: [{ occasion: "thank_you", date: days(2), label: "Intro meeting follow-up" }],
     },
     {
-      firstName: "Liam", lastName: "Foster", audience: "kid", city: "Denver", state: "CO",
+      firstName: "Liam", lastName: "Foster", audience: "kid", address1: "31 Larkspur Way", city: "Denver", state: "CO", zip: "80202",
       tags: "holiday-list,age-4", dates: [{ occasion: "holiday", date: "2026-12-24" }],
     },
     {
       firstName: "Grace", lastName: "Bennett", audience: "client", company: "Bennett Law",
-      email: "grace@bennettlaw.com", city: "Nashville", state: "TN", tags: "vip",
+      email: "grace@bennettlaw.com", address1: "120 Music Sq", city: "Nashville", state: "TN", zip: "37203", tags: "vip",
       dates: [{ occasion: "birthday", date: days(3) }, { occasion: "work_anniversary", date: "2026-10-01" }],
     },
     {
       firstName: "Noah", lastName: "Park", audience: "employee", company: "Northstar Advisors",
-      email: "noah@northstar.com", city: "Seattle", state: "WA", tags: "team",
+      email: "noah@northstar.com", address1: "410 Pike St", city: "Seattle", state: "WA", zip: "98101", tags: "team",
       dates: [{ occasion: "work_anniversary", date: days(21) }],
     },
   ];
@@ -68,8 +68,9 @@ export async function seedDemoDataFor(userId: string): Promise<void> {
       data: {
         userId,
         firstName: r.firstName, lastName: r.lastName, audience: r.audience,
-        company: r.company, email: r.email, city: r.city, state: r.state, tags: r.tags,
-        notes: r.notes,
+        company: r.company, email: r.email,
+        address1: r.address1 ?? "", city: r.city, state: r.state, zip: r.zip ?? "",
+        tags: r.tags, notes: r.notes,
         importantDates: {
           create: r.dates.map((d) => ({
             occasion: d.occasion,

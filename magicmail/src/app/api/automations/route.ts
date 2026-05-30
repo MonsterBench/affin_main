@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUserId } from "@/lib/auth";
 import { addAutomation, listAutomations } from "@/lib/db";
-import type { AudienceKind, OccasionType } from "@/lib/types";
+import type { AudienceKind, Cadence, OccasionType } from "@/lib/types";
 
 export async function GET() {
   const userId = await requireUserId();
@@ -24,6 +24,7 @@ export async function POST(req: Request) {
     leadTimeDays: Number(body.leadTimeDays ?? 5),
     audienceFilter: (body.audienceFilter ?? "all") as AudienceKind | "all",
     tagFilter: body.tagFilter || undefined,
+    cadence: (body.cadence ?? "one_time") as Cadence,
     active: body.active ?? true,
     noteTemplate: String(body.noteTemplate ?? ""),
   });

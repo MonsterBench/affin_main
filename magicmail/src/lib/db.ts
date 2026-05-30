@@ -5,12 +5,15 @@ import { STATUS_ORDER } from "./types";
 import type {
   AudienceKind,
   Automation,
+  Cadence,
   ImportantDate,
   OccasionType,
   Recipient,
   Send,
+  SendAction,
   SendStatus,
 } from "./types";
+import { OCCASION_LABELS } from "./types";
 
 // Data access layer. Everything is scoped to a userId for multi-tenant safety,
 // and rows are mapped into the app's domain types so the UI is storage-agnostic.
@@ -22,8 +25,12 @@ type RecipientRow = {
   audience: string;
   company: string | null;
   email: string | null;
+  address1: string;
+  address2: string;
   city: string;
   state: string;
+  zip: string;
+  country: string;
   tags: string;
   notes: string | null;
   createdAt: Date;
@@ -38,8 +45,12 @@ function toRecipient(r: RecipientRow): Recipient {
     audience: r.audience as AudienceKind,
     company: r.company ?? undefined,
     email: r.email ?? undefined,
+    address1: r.address1,
+    address2: r.address2,
     city: r.city,
     state: r.state,
+    zip: r.zip,
+    country: r.country,
     tags: r.tags ? r.tags.split(",").filter(Boolean) : [],
     notes: r.notes ?? undefined,
     importantDates: r.importantDates.map((d) => ({
@@ -73,8 +84,12 @@ export async function addRecipient(
       audience: input.audience,
       company: input.company,
       email: input.email,
+      address1: input.address1,
+      address2: input.address2,
       city: input.city,
       state: input.state,
+      zip: input.zip,
+      country: input.country,
       tags: input.tags.join(","),
       notes: input.notes,
       importantDates: {
@@ -99,6 +114,7 @@ function toAutomation(a: {
   leadTimeDays: number;
   audienceFilter: string;
   tagFilter: string | null;
+  cadence: string;
   active: boolean;
   noteTemplate: string;
   createdAt: Date;
@@ -111,6 +127,7 @@ function toAutomation(a: {
     leadTimeDays: a.leadTimeDays,
     audienceFilter: a.audienceFilter as AudienceKind | "all",
     tagFilter: a.tagFilter ?? undefined,
+    cadence: a.cadence as Cadence,
     active: a.active,
     noteTemplate: a.noteTemplate,
     createdAt: a.createdAt.toISOString().slice(0, 10),
@@ -138,6 +155,7 @@ export async function addAutomation(
       leadTimeDays: input.leadTimeDays,
       audienceFilter: input.audienceFilter,
       tagFilter: input.tagFilter,
+      cadence: input.cadence,
       active: input.active,
       noteTemplate: input.noteTemplate,
     },
@@ -169,6 +187,7 @@ function toSend(s: {
   deliveredOn: string | null;
   trackingNumber: string | null;
   note: string;
+  reason: string | null;
   automationId: string | null;
   createdAt: Date;
 }): Send {
@@ -182,6 +201,7 @@ function toSend(s: {
     deliveredOn: s.deliveredOn ?? undefined,
     trackingNumber: s.trackingNumber ?? undefined,
     note: s.note,
+    reason: s.reason ?? undefined,
     automationId: s.automationId ?? undefined,
     createdAt: s.createdAt.toISOString().slice(0, 10),
   };
@@ -213,24 +233,73 @@ export async function addSend(
       status: input.status,
       scheduledFor: input.scheduledFor,
       note: input.note,
+      reason: input.reason,
       automationId: input.automationId,
     },
   });
   return toSend(row);
 }
 
-export async function advanceSend(userId: string, id: string): Promise<Send | null> {
+function addDays(iso: string, n: number): string {
+  const d = new Date(iso + "T00:00:00");
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+// Per-touch controls inspired by Client Giant: advance through fulfillment, or
+// pause / resume / skip / delay / expedite an upcoming send.
+export async function applySendAction(
+  userId: string,
+  id: string,
+  action: SendAction,
+): Promise<Send | null> {
   const existing = await prisma.send.findFirst({ where: { id, userId } });
   if (!existing) return null;
-  const i = STATUS_ORDER.indexOf(existing.status as SendStatus);
-  if (i >= STATUS_ORDER.length - 1) return toSend(existing);
+  const status = existing.status as SendStatus;
+  const today = new Date().toISOString().slice(0, 10);
+  const data: {
+    status?: string;
+    trackingNumber?: string;
+    deliveredOn?: string;
+    scheduledFor?: string;
+  } = {};
 
-  const next = STATUS_ORDER[i + 1] as SendStatus;
-  const data: { status: string; trackingNumber?: string; deliveredOn?: string } = { status: next };
-  if (next === "shipped" && !existing.trackingNumber) {
-    data.trackingNumber = `9400 ${rand()} ${rand()} ${rand()}`;
+  switch (action) {
+    case "advance": {
+      // Only sends already in the linear pipeline can advance.
+      const i = STATUS_ORDER.indexOf(status);
+      if (i < 0 || i >= STATUS_ORDER.length - 1) return toSend(existing);
+      const next = STATUS_ORDER[i + 1] as SendStatus;
+      data.status = next;
+      if (next === "shipped" && !existing.trackingNumber) {
+        data.trackingNumber = `9400 ${rand()} ${rand()} ${rand()}`;
+      }
+      if (next === "delivered") data.deliveredOn = today;
+      break;
+    }
+    case "pause":
+      if (status !== "scheduled") return toSend(existing);
+      data.status = "paused";
+      break;
+    case "resume":
+      if (status !== "paused") return toSend(existing);
+      data.status = "scheduled";
+      break;
+    case "skip":
+      if (status !== "scheduled" && status !== "paused") return toSend(existing);
+      data.status = "skipped";
+      break;
+    case "delay":
+      if (status !== "scheduled" && status !== "paused") return toSend(existing);
+      data.scheduledFor = addDays(existing.scheduledFor, 7);
+      break;
+    case "expedite": {
+      if (status !== "scheduled" && status !== "paused") return toSend(existing);
+      const pulled = addDays(existing.scheduledFor, -3);
+      data.scheduledFor = pulled < today ? today : pulled;
+      break;
+    }
   }
-  if (next === "delivered") data.deliveredOn = new Date().toISOString().slice(0, 10);
 
   const row = await prisma.send.update({ where: { id }, data });
   return toSend(row);
@@ -271,7 +340,8 @@ export async function computeMetrics(userId: string): Promise<DashboardMetrics> 
     cost += p.cost;
   }
 
-  const inFlight = sends.filter((s) => s.status !== "delivered");
+  // "In flight" = active sends still working through the pipeline.
+  const inFlight = sends.filter((s) => s.status !== "delivered" && s.status !== "skipped");
 
   return {
     recipients: recipientCount,
@@ -286,7 +356,7 @@ export async function computeMetrics(userId: string): Promise<DashboardMetrics> 
     marginRate: revenue > 0 ? (revenue - cost) / revenue : 0,
     upcoming: sends.filter((s) => {
       const d = new Date(s.scheduledFor + "T00:00:00");
-      return s.status !== "delivered" && d >= now && d <= in30;
+      return s.status === "scheduled" && d >= now && d <= in30;
     }).length,
   };
 }
@@ -303,4 +373,113 @@ export async function addToWaitlist(email: string, source?: string): Promise<boo
   } catch {
     return false;
   }
+}
+
+// ---- Integrations (CRM / Zapier) -----------------------------------------
+export async function getOrCreateApiKey(userId: string): Promise<string> {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (user?.apiKey) return user.apiKey;
+  const key = `kk_live_${randomToken(32)}`;
+  await prisma.user.update({ where: { id: userId }, data: { apiKey: key } });
+  return key;
+}
+
+export async function rotateApiKey(userId: string): Promise<string> {
+  const key = `kk_live_${randomToken(32)}`;
+  await prisma.user.update({ where: { id: userId }, data: { apiKey: key } });
+  return key;
+}
+
+export async function userIdForApiKey(apiKey: string): Promise<string | null> {
+  if (!apiKey) return null;
+  const user = await prisma.user.findUnique({ where: { apiKey } });
+  return user?.id ?? null;
+}
+
+export interface TriggerInput {
+  occasion: OccasionType;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  company?: string;
+  city?: string;
+  state?: string;
+  tags?: string[];
+  date?: string; // when the occasion happens (defaults to today)
+}
+
+export interface TriggerResult {
+  recipientId: string;
+  scheduled: { sendId: string; automationName: string; giftId: string; scheduledFor: string }[];
+  matchedAutomations: number;
+}
+
+// Inbound CRM/Zapier event → upsert the recipient and fire matching automations.
+export async function triggerFromEvent(userId: string, input: TriggerInput): Promise<TriggerResult> {
+  const tags = input.tags ?? [];
+  const occasionDate = input.date ?? new Date().toISOString().slice(0, 10);
+
+  // Find or create the recipient by name + email within this account.
+  let recipient = await prisma.recipient.findFirst({
+    where: {
+      userId,
+      firstName: input.firstName,
+      lastName: input.lastName,
+      ...(input.email ? { email: input.email } : {}),
+    },
+  });
+  if (!recipient) {
+    recipient = await prisma.recipient.create({
+      data: {
+        userId,
+        firstName: input.firstName,
+        lastName: input.lastName,
+        audience: "client",
+        email: input.email,
+        company: input.company,
+        city: input.city ?? "",
+        state: input.state ?? "",
+        tags: tags.join(","),
+        importantDates: { create: [{ occasion: input.occasion, date: occasionDate }] },
+      },
+    });
+  }
+
+  // Match active automations for this occasion + audience/tag filters.
+  const automations = await prisma.automation.findMany({
+    where: { userId, triggerOccasion: input.occasion, active: true },
+  });
+  const recipientTags = recipient.tags ? recipient.tags.split(",").filter(Boolean) : tags;
+
+  const scheduled: TriggerResult["scheduled"] = [];
+  for (const a of automations) {
+    if (a.audienceFilter !== "all" && a.audienceFilter !== recipient.audience) continue;
+    if (a.tagFilter && !recipientTags.includes(a.tagFilter)) continue;
+
+    const scheduledFor = addDays(occasionDate, -a.leadTimeDays);
+    const note = a.noteTemplate.replaceAll("{firstName}", recipient.firstName);
+    const send = await prisma.send.create({
+      data: {
+        userId,
+        recipientId: recipient.id,
+        giftId: a.giftId,
+        occasion: input.occasion,
+        status: "scheduled",
+        scheduledFor: scheduledFor < occasionDate ? scheduledFor : occasionDate,
+        note,
+        reason: `Triggered by “${a.name}” from a ${OCCASION_LABELS[input.occasion]} event`,
+        automationId: a.id,
+      },
+    });
+    scheduled.push({ sendId: send.id, automationName: a.name, giftId: a.giftId, scheduledFor: send.scheduledFor });
+  }
+
+  return { recipientId: recipient.id, scheduled, matchedAutomations: scheduled.length };
+}
+
+function randomToken(len: number): string {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let out = "";
+  for (let i = 0; i < len; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
 }
