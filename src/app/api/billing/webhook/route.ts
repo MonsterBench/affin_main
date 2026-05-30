@@ -53,6 +53,7 @@ export async function POST(req: Request) {
           zip: m.zip ?? "",
           country: m.country ?? "US",
           note: m.note ?? "",
+          styleId: m.styleId,
         });
       } else {
         await setPlan(m.userId, m.plan, s.subscription as string | undefined);

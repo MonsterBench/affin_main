@@ -707,6 +707,7 @@ export interface GuestOrderInput {
   zip: string;
   country?: string;
   note: string;
+  styleId?: string;
 }
 
 // Creates a one-off consumer gift order (e.g. a parent buying a single Santa
@@ -758,6 +759,7 @@ export async function createGuestOrder(input: GuestOrderInput): Promise<{ sendId
       note: input.note,
       reason: `One-off gift purchased by ${input.buyerEmail}`,
       source: "storefront",
+      styleId: input.styleId,
       magicToken,
       videoStatus,
       videoUrl,

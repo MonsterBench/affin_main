@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { fieldClass, labelClass } from "@/components/ui/Modal";
+import { LETTER_STYLES, DEFAULT_STYLE_ID, getLetterStyle } from "@/lib/letterStyles";
 
 type Phase = "details" | "review" | "send";
 
@@ -24,6 +25,7 @@ export function SantaLetterCreator() {
   const set = (k: keyof typeof d) => (e: React.ChangeEvent<HTMLInputElement>) => setD({ ...d, [k]: e.target.value });
 
   const [letter, setLetter] = useState("");
+  const [styleId, setStyleId] = useState(DEFAULT_STYLE_ID);
   const [soundsHuman, setSoundsHuman] = useState(true);
   const [gen, setGen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,6 +77,7 @@ export function SantaLetterCreator() {
         zip: s.zip,
         buyerEmail: s.buyerEmail,
         note: letter,
+        styleId,
       }),
     });
     const data = await res.json().catch(() => ({}));
@@ -185,12 +188,31 @@ export function SantaLetterCreator() {
             </div>
           ) : (
             <div>
-              <div className="relative rounded-3xl border border-gold-300/40 bg-parchment p-7 shadow-lift">
+              <div className="mb-3">
+                <p className="mb-2 text-left text-xs font-semibold uppercase tracking-wide text-pine-500">Letter style</p>
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {LETTER_STYLES.map((st) => (
+                    <button
+                      key={st.id}
+                      type="button"
+                      onClick={() => setStyleId(st.id)}
+                      title={st.blurb}
+                      className={`w-20 shrink-0 rounded-xl border p-1.5 text-center transition ${
+                        styleId === st.id ? "border-pine-600 ring-1 ring-pine-500/30" : "border-pine-200 hover:border-pine-400"
+                      }`}
+                    >
+                      <span className="block h-9 w-full rounded-md border border-black/10" style={{ background: st.paper }} />
+                      <span className="mt-1 block text-[10px] font-medium leading-tight text-pine-700">{st.emoji} {st.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="relative rounded-3xl border border-gold-300/40 p-7 shadow-lift" style={{ background: getLetterStyle(styleId).paper }}>
                 <div className="mb-3 flex items-center justify-between">
                   <span className="font-display text-sm font-semibold text-berry-500">North Pole · Santa&apos;s Workshop</span>
                   <span className="text-xl">❄️</span>
                 </div>
-                <p className="whitespace-pre-line font-display text-[15px] leading-relaxed text-pine-900">{letter}</p>
+                <p className="whitespace-pre-line font-display text-[15px] leading-relaxed" style={{ color: getLetterStyle(styleId).ink }}>{letter}</p>
               </div>
 
               <div className="mt-3 flex items-center justify-between gap-3">

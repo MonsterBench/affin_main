@@ -116,6 +116,7 @@ model Send {
   magicToken     String?   @unique // powers the QR "magic" experience page
   videoStatus    String    @default("none") // none | requested | ready | failed
   videoUrl       String?
+  styleId        String? // chosen letter style/stationery preset
   automationId   String?
   createdAt      DateTime  @default(now())
 

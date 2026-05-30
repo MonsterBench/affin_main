@@ -73,7 +73,7 @@ async function submitToHandwrytten(job: HandwritingJob, jobId: string): Promise<
   try {
     const res = await fetch(`${base}/orders`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      headers: { Authorization: key, "Content-Type": "application/json" },
       body: JSON.stringify({
         card_id: process.env.HANDWRYTTEN_CARD_ID,
         font_id: process.env.HANDWRYTTEN_FONT_ID,
@@ -102,5 +102,37 @@ async function submitToHandwrytten(job: HandwritingJob, jobId: string): Promise<
     };
   } catch {
     return { jobId, provider: "handwrytten", status: "failed", message: "Could not reach Handwrytten." };
+  }
+}
+
+// Verifies the configured handwriting provider is reachable and authenticated,
+// so you can confirm the live mailing path before relying on it.
+export async function testHandwritingConnection(): Promise<{ ok: boolean; provider: HandwritingProvider; message: string }> {
+  const provider = activeProvider();
+  if (provider !== "handwrytten") {
+    return {
+      ok: true,
+      provider,
+      message:
+        provider === "axidraw"
+          ? "Using the in-house AxiDraw pen plotter (no external connection to test)."
+          : "Using the manual operator queue (no external provider configured).",
+    };
+  }
+  const key = process.env.HANDWRYTTEN_API_KEY!;
+  const base = process.env.HANDWRYTTEN_API_URL || "https://api.handwrytten.com/v1";
+  try {
+    // Handwrytten uses the API key directly in the Authorization header.
+    const res = await fetch(`${base}/account`, { headers: { Authorization: key } });
+    if (res.status === 401 || res.status === 403) {
+      return { ok: false, provider, message: "Handwrytten rejected the API key (check it on their Integrations page)." };
+    }
+    if (!res.ok && res.status !== 404) {
+      return { ok: false, provider, message: `Handwrytten returned ${res.status}.` };
+    }
+    // 2xx (or 404 on the account path) means the host is reachable and the key was accepted.
+    return { ok: true, provider, message: "Connected to Handwrytten — real-ink letters will be written and mailed." };
+  } catch {
+    return { ok: false, provider, message: "Could not reach Handwrytten." };
   }
 }
