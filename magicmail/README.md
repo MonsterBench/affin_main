@@ -46,6 +46,10 @@ npm run db:seed        # create the demo account + sample data
 npm run dev            # http://localhost:3000
 ```
 
+**Deploying?** See [DEPLOY.md](./DEPLOY.md) — one-platform setup on Railway (app +
+Postgres, or app + SQLite volume), or Vercel + Railway Postgres. The Prisma adapter
+auto-selects Postgres vs SQLite from `DATABASE_URL`.
+
 ### Demo login
 
 ```
