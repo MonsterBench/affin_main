@@ -271,7 +271,7 @@ function Footer() {
   return (
     <footer className="border-t hairline bg-cream">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-10 sm:flex-row">
-        <Logo height={48} />
+        <Logo variant="full" height={52} />
         <p className="text-sm text-pine-600/80">kriskringlemail.com — a little magic in every mailbox.</p>
         <div className="flex items-center gap-4">
           <Link href="/business" className="text-xs font-medium text-pine-500 hover:text-pine-700">For business →</Link>

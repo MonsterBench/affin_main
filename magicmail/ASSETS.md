@@ -6,16 +6,26 @@ swapping a placeholder for a real photo is a one-line change.
 
 ## 1. Logo
 
-Drop your logo here:
+Export each variant as a **transparent PNG** and drop them in
+`magicmail/public/brand/`:
 
-```
-magicmail/public/logo.png
-```
+| File | Variant | Used where |
+|------|---------|------------|
+| `logo-icon.png` | Red wax-seal **KK** | Top nav (paired with a cream wordmark — reads on the dark green header) |
+| `logo-primary.png` | Envelope + stacked wordmark | Footer (light background) |
+| `logo-horizontal.png` | Envelope + horizontal wordmark | Optional alternate lockup |
+| `logo-stamp.png` | Circular postal stamp | Optional decorative / keepsake accent |
 
-- Used in the top nav (≈40px tall) and footer (≈48px tall).
-- A transparent background works best (it sits on dark green **and** cream).
-- If the file is missing, the header falls back to a crafted badge + wordmark,
-  so nothing ever looks broken.
+Why split it up: the full logo's green **MAIL** would disappear on the dark
+green nav, so the nav uses the standalone wax-seal icon + a cream text wordmark,
+while the footer (cream background) uses the full primary lockup.
+
+If any file is missing, the `Logo` component falls back to a crafted badge so
+nothing ever looks broken.
+
+### Favicon / app icon
+Drop the wax-seal as `magicmail/src/app/icon.png` (512×512) and Next.js will use
+it as the browser tab icon automatically.
 
 ## 2. Photography
 
