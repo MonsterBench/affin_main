@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { fieldClass, labelClass } from "@/components/ui/Modal";
 import { LETTER_STYLES, DEFAULT_STYLE_ID, getLetterStyle } from "@/lib/letterStyles";
+import { SANTA_TIERS, SANTA_ADDONS } from "@/lib/santaAddons";
+import { currency } from "@/lib/format";
 
 type Phase = "details" | "review" | "send";
 
@@ -71,6 +73,15 @@ export function SantaLetterCreator() {
   const setSend = (k: keyof typeof s) => (e: React.ChangeEvent<HTMLInputElement>) => setS({ ...s, [k]: e.target.value });
   const [sending, setSending] = useState(false);
 
+  // Package & add-ons.
+  const [tierId, setTierId] = useState<string>("santa-letter-deluxe");
+  const [addonIds, setAddonIds] = useState<string[]>([]);
+  const toggleAddon = (id: string) =>
+    setAddonIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  const tier = SANTA_TIERS.find((t) => t.id === tierId) ?? SANTA_TIERS[0];
+  const chosenAddons = SANTA_ADDONS.filter((a) => addonIds.includes(a.id));
+  const total = tier.price + chosenAddons.reduce((sum, a) => sum + a.price, 0);
+
   async function generate() {
     if (!d.childName.trim()) return setError("Please add the child's name.");
     setError(null);
@@ -103,7 +114,8 @@ export function SantaLetterCreator() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        giftId: "santa-letter-deluxe",
+        giftId: tierId,
+        addonIds,
         occasion: "holiday",
         firstName: d.childName,
         lastName: s.lastName,
@@ -183,7 +195,71 @@ export function SantaLetterCreator() {
         {phase === "send" && (
           <div className="space-y-4">
             <button onClick={() => setPhase("review")} className="text-sm font-semibold text-pine-600 hover:underline">← Back to the letter</button>
-            <h2 className="font-display text-xl font-semibold text-pine-800">Where should Santa mail it?</h2>
+
+            <h2 className="font-display text-xl font-semibold text-pine-800">Choose your package</h2>
+            <div className="grid grid-cols-2 gap-3">
+              {SANTA_TIERS.map((t) => {
+                const active = t.id === tierId;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setTierId(t.id)}
+                    className={`rounded-2xl border p-4 text-left transition ${
+                      active ? "border-pine-600 bg-pine-50 ring-1 ring-pine-500/30" : "border-pine-200 hover:border-pine-400"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-display font-semibold text-pine-800">{t.name}</span>
+                      <span className="font-display font-semibold text-pine-800">{currency(t.price)}</span>
+                    </div>
+                    {"popular" in t && t.popular && (
+                      <span className="mt-1 inline-block rounded-full bg-berry-500 px-2 py-0.5 text-[10px] font-semibold text-cream">Most loved</span>
+                    )}
+                    <ul className="mt-2 space-y-1 text-xs text-pine-600/90">
+                      {t.perks.map((p) => (
+                        <li key={p} className="flex gap-1.5"><span className="text-pine-500">✓</span>{p}</li>
+                      ))}
+                    </ul>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div>
+              <p className="text-sm font-semibold text-pine-800">Add a little extra magic</p>
+              <div className="mt-2 space-y-2">
+                {SANTA_ADDONS.map((a) => {
+                  const active = addonIds.includes(a.id);
+                  return (
+                    <button
+                      key={a.id}
+                      type="button"
+                      onClick={() => toggleAddon(a.id)}
+                      className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition ${
+                        active ? "border-pine-600 bg-pine-50" : "border-pine-200 hover:border-pine-400"
+                      }`}
+                    >
+                      <span
+                        className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border text-xs ${
+                          active ? "border-pine-600 bg-pine-600 text-cream" : "border-pine-300 text-transparent"
+                        }`}
+                      >
+                        ✓
+                      </span>
+                      <span className="text-xl">{a.emoji}</span>
+                      <span className="flex-1">
+                        <span className="block text-sm font-medium text-pine-800">{a.label}</span>
+                        <span className="block text-xs text-pine-500">{a.blurb}</span>
+                      </span>
+                      <span className="text-sm font-semibold text-pine-700">+{currency(a.price)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <h2 className="pt-2 font-display text-xl font-semibold text-pine-800">Where should Santa mail it?</h2>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className={labelClass}>Child&apos;s first name</label>
@@ -204,13 +280,29 @@ export function SantaLetterCreator() {
               <label className={labelClass}>Your email (for the receipt)</label>
               <input className={fieldClass} value={s.buyerEmail} onChange={setSend("buyerEmail")} placeholder="you@example.com" />
             </div>
+            <div className="rounded-2xl border border-pine-100 bg-parchment/60 p-4 text-sm">
+              <div className="flex items-center justify-between text-pine-700">
+                <span>{tier.name} Santa Letter</span>
+                <span>{currency(tier.price)}</span>
+              </div>
+              {chosenAddons.map((a) => (
+                <div key={a.id} className="mt-1 flex items-center justify-between text-pine-600/90">
+                  <span>{a.emoji} {a.label}</span>
+                  <span>{currency(a.price)}</span>
+                </div>
+              ))}
+              <div className="mt-2 flex items-center justify-between border-t border-pine-200 pt-2 font-display text-base font-semibold text-pine-800">
+                <span>Total</span>
+                <span>{currency(total)}</span>
+              </div>
+            </div>
             {error && <p className="rounded-xl bg-berry-500/10 px-3.5 py-2.5 text-sm text-berry-600">{error}</p>}
             <button
               onClick={checkout}
               disabled={sending}
               className="w-full rounded-full bg-pine-700 px-5 py-3 font-semibold text-cream shadow-card transition hover:bg-pine-600 disabled:opacity-60"
             >
-              {sending ? "Processing…" : "🎅 Send the Deluxe Santa Letter — $49"}
+              {sending ? "Processing…" : `🎅 Send ${tier.name} Santa Letter — ${currency(total)}`}
             </button>
             <p className="text-center text-xs text-pine-400">Hand-penned in real ink · North Pole postmark · no account needed</p>
           </div>

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createGuestOrder } from "@/lib/db";
 import { getProduct } from "@/lib/catalog";
 import { stripe, billingIsLive, appUrl } from "@/lib/stripe";
+import { resolveSantaAddons } from "@/lib/santaAddons";
 import { OCCASION_LABELS, type OccasionType } from "@/lib/types";
 
 const emailRe = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
@@ -25,6 +26,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "A valid email is required" }, { status: 400 });
   }
 
+  // Validated server-side so add-on prices can't be tampered with by the client.
+  const addons = resolveSantaAddons(b?.addonIds);
+
   const order = {
     buyerEmail: String(b.buyerEmail),
     giftId: product.id,
@@ -40,6 +44,8 @@ export async function POST(req: Request) {
     // Cap to Stripe's 500-char metadata limit (live mode passes this via metadata).
     note: String(b.note ?? "").slice(0, 500),
     styleId: b.styleId ? String(b.styleId) : "",
+    // Comma-joined labels for fulfillment; safe as a single metadata string.
+    addons: addons.map((a) => a.label).join(", "),
   };
 
   // Demo mode: no Stripe keys → place the order now.
@@ -60,6 +66,14 @@ export async function POST(req: Request) {
           product_data: { name: `${product.name} — for ${order.firstName} ${order.lastName}` },
         },
       },
+      ...addons.map((a) => ({
+        quantity: 1,
+        price_data: {
+          currency: "usd" as const,
+          unit_amount: Math.round(a.price * 100),
+          product_data: { name: `${a.emoji} ${a.label}` },
+        },
+      })),
     ],
     success_url: appUrl("/gift/success?status=success"),
     cancel_url: appUrl("/gift?status=cancelled"),
