@@ -9,14 +9,15 @@
 
 export const PHOTOS = {
   // Hero — Santa hand-penning a "Dear Emma" letter by lantern light.
-  hero: "/photos/_placeholder-hero.svg",
+  hero: "/photos/hero.png",
   // "For Families" card — a mom and kids delighted by a letter.
-  families: "/photos/_placeholder-families.svg",
+  families: "/photos/families.png",
   // "For Businesses" card — a person writing a note at a cozy desk.
-  business: "/photos/_placeholder-business.svg",
+  business: "/photos/business.png",
   // "Magic Mail Club" card + gift collection — the red North Pole gift box.
-  giftbox: "/photos/_placeholder-giftbox.svg",
+  giftbox: "/photos/giftbox.png",
   // "How it works" detail — addressed envelope + Nice List certificate.
+  // (No photo yet; using the brand illustration until one is added.)
   keepsake: "/photos/_placeholder-keepsake.svg",
 } as const;
 
