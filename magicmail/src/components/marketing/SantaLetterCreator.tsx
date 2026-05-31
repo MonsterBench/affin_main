@@ -7,6 +7,42 @@ import { LETTER_STYLES, DEFAULT_STYLE_ID, getLetterStyle } from "@/lib/letterSty
 
 type Phase = "details" | "review" | "send";
 
+const STEPS: { phase: Phase; label: string }[] = [
+  { phase: "details", label: "Tell Santa" },
+  { phase: "review", label: "Review letter" },
+  { phase: "send", label: "Mail it" },
+];
+
+function Stepper({ phase }: { phase: Phase }) {
+  const current = STEPS.findIndex((s) => s.phase === phase);
+  return (
+    <ol className="mb-8 flex items-center justify-center gap-2 text-sm">
+      {STEPS.map((s, i) => {
+        const state = i < current ? "done" : i === current ? "active" : "todo";
+        return (
+          <li key={s.phase} className="flex items-center gap-2">
+            <span
+              className={`grid h-7 w-7 place-items-center rounded-full text-xs font-semibold transition ${
+                state === "done"
+                  ? "bg-pine-600 text-cream"
+                  : state === "active"
+                    ? "bg-gold-300 text-pine-900 ring-2 ring-gold-300/40"
+                    : "bg-pine-100 text-pine-400"
+              }`}
+            >
+              {state === "done" ? "✓" : i + 1}
+            </span>
+            <span className={`hidden font-medium sm:inline ${state === "todo" ? "text-pine-400" : "text-pine-700"}`}>
+              {s.label}
+            </span>
+            {i < STEPS.length - 1 && <span className="mx-1 h-px w-6 bg-pine-200 sm:w-8" aria-hidden />}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 export function SantaLetterCreator() {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("details");
@@ -88,6 +124,8 @@ export function SantaLetterCreator() {
   }
 
   return (
+    <div>
+    <Stepper phase={phase} />
     <div className="grid gap-8 lg:grid-cols-2">
       {/* Left: inputs */}
       <div>
@@ -248,6 +286,7 @@ export function SantaLetterCreator() {
           )}
         </div>
       </div>
+    </div>
     </div>
   );
 }
