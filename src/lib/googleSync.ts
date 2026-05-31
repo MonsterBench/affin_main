@@ -1,5 +1,5 @@
 import "server-only";
-import { accessTokenFromRefresh, fetchGoogleOccasions } from "./google";
+import { accessTokenFromRefresh, fetchGoogleOccasions, fetchGoogleContacts } from "./google";
 import { importRecipients, markGoogleSynced, usersWithGoogle } from "./db";
 
 export interface GoogleSyncResult {
@@ -16,8 +16,13 @@ export async function syncGoogleForUser(userId: string, refreshToken: string): P
   const accessToken = await accessTokenFromRefresh(refreshToken);
   if (!accessToken) return { ok: false, created: 0, merged: 0, datesAdded: 0, error: "Couldn't refresh Google access." };
 
-  const rows = await fetchGoogleOccasions(accessToken);
-  const result = await importRecipients(userId, rows);
+  // Pull from both the calendar (incl. the Birthdays calendar) and Contacts,
+  // then let importRecipients create/merge and dedupe.
+  const [calendarRows, contactRows] = await Promise.all([
+    fetchGoogleOccasions(accessToken),
+    fetchGoogleContacts(accessToken),
+  ]);
+  const result = await importRecipients(userId, [...calendarRows, ...contactRows]);
   await markGoogleSynced(userId);
   return { ok: true, ...result };
 }

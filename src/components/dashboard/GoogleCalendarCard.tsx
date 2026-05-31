@@ -73,8 +73,8 @@ export function GoogleCalendarCard({ live, initial }: { live: boolean; initial: 
         </span>
       </div>
       <p className="mt-2 text-sm leading-relaxed text-pine-600/90">
-        Import birthdays & anniversaries straight from Google Calendar (including the contacts
-        Birthdays calendar), and we&apos;ll keep them in sync automatically every day.
+        Import birthdays & anniversaries from Google Calendar <em>and</em> your Google Contacts, and
+        we&apos;ll keep them in sync automatically every day.
       </p>
 
       {!live ? (

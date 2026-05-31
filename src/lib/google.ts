@@ -14,10 +14,11 @@ const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 export const googleIsLive = Boolean(CLIENT_ID && CLIENT_SECRET);
 
-// Read-only calendar access + the user's email for display.
+// Read-only calendar + contacts access, plus the user's email for display.
 const SCOPES = [
   "https://www.googleapis.com/auth/calendar.readonly",
   "https://www.googleapis.com/auth/calendar.events.readonly",
+  "https://www.googleapis.com/auth/contacts.readonly",
   "openid",
   "email",
 ];
@@ -203,6 +204,77 @@ function rowFromEvent(ev: GoogleEvent): GoogleImportRow | null {
     lastName,
     importantDates: [{ occasion, date, label: isAnniv ? "Anniversary" : undefined }],
   };
+}
+
+// --- Google Contacts (People API) ------------------------------------------
+
+interface PersonDate {
+  year?: number;
+  month?: number;
+  day?: number;
+}
+interface Person {
+  names?: { givenName?: string; familyName?: string; displayName?: string }[];
+  birthdays?: { date?: PersonDate; text?: string }[];
+  events?: { date?: PersonDate; type?: string; formattedType?: string }[];
+}
+
+function isoFromPersonDate(d?: PersonDate): string {
+  if (!d || !d.month || !d.day) return "";
+  const year = d.year ?? 2000; // year is cosmetic — matched by month/day
+  return `${String(year).padStart(4, "0")}-${String(d.month).padStart(2, "0")}-${String(d.day).padStart(2, "0")}`;
+}
+
+function nameFromPerson(p: Person): { firstName: string; lastName: string } | null {
+  const n = p.names?.[0];
+  if (!n) return null;
+  if (n.givenName) return { firstName: n.givenName, lastName: n.familyName ?? "" };
+  if (n.displayName) return splitName(n.displayName);
+  return null;
+}
+
+// Pulls birthdays & anniversaries straight from the user's Google Contacts.
+export async function fetchGoogleContacts(accessToken: string): Promise<GoogleImportRow[]> {
+  const rows: GoogleImportRow[] = [];
+  let pageToken = "";
+  // Paginate through connections (People API caps page size at 1000).
+  for (let guard = 0; guard < 20; guard++) {
+    const p = new URLSearchParams({
+      personFields: "names,birthdays,events",
+      pageSize: "1000",
+      sortOrder: "FIRST_NAME_ASCENDING",
+    });
+    if (pageToken) p.set("pageToken", pageToken);
+    let data: { connections?: Person[]; nextPageToken?: string };
+    try {
+      const res = await fetch(`https://people.googleapis.com/v1/people/me/connections?${p.toString()}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!res.ok) break;
+      data = await res.json();
+    } catch {
+      break;
+    }
+    for (const person of data.connections ?? []) {
+      const name = nameFromPerson(person);
+      if (!name?.firstName) continue;
+
+      const bday = isoFromPersonDate(person.birthdays?.[0]?.date);
+      if (bday) {
+        rows.push({ firstName: name.firstName, lastName: name.lastName, importantDates: [{ occasion: "birthday", date: bday }] });
+      }
+      for (const ev of person.events ?? []) {
+        const isAnniv = (ev.type ?? ev.formattedType ?? "").toLowerCase().includes("anniversar");
+        const date = isoFromPersonDate(ev.date);
+        if (isAnniv && date) {
+          rows.push({ firstName: name.firstName, lastName: name.lastName, importantDates: [{ occasion: "milestone", date, label: "Anniversary" }] });
+        }
+      }
+    }
+    if (!data.nextPageToken) break;
+    pageToken = data.nextPageToken;
+  }
+  return dedupe(rows);
 }
 
 function dedupe(rows: GoogleImportRow[]): GoogleImportRow[] {
