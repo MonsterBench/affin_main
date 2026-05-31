@@ -123,6 +123,81 @@ export async function addRecipient(
   return toRecipient(row);
 }
 
+export interface ImportRecipient {
+  firstName: string;
+  lastName: string;
+  email?: string;
+  company?: string;
+  address1?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  importantDates: { occasion: string; date: string; label?: string }[];
+}
+
+// Bulk import: create new recipients, or merge important dates into existing
+// ones (matched by case-insensitive first+last name within the account).
+export async function importRecipients(
+  userId: string,
+  rows: ImportRecipient[],
+): Promise<{ created: number; merged: number; datesAdded: number }> {
+  const existing = await prisma.recipient.findMany({
+    where: { userId },
+    include: { importantDates: true },
+  });
+  const key = (f: string, l: string) => `${f}|${l}`.toLowerCase().trim();
+  const byName = new Map(existing.map((r) => [key(r.firstName, r.lastName), r]));
+
+  let created = 0;
+  let merged = 0;
+  let datesAdded = 0;
+
+  for (const row of rows) {
+    if (!row.firstName) continue;
+    const match = byName.get(key(row.firstName, row.lastName));
+
+    if (match) {
+      // Merge any new dates (skip occasion+date duplicates).
+      const have = new Set(match.importantDates.map((d) => `${d.occasion}:${d.date.slice(5)}`));
+      let addedHere = 0;
+      for (const d of row.importantDates) {
+        if (have.has(`${d.occasion}:${d.date.slice(5)}`)) continue;
+        await prisma.importantDate.create({
+          data: { recipientId: match.id, occasion: d.occasion, date: d.date, label: d.label },
+        });
+        addedHere++;
+      }
+      if (addedHere > 0) { merged++; datesAdded += addedHere; }
+      continue;
+    }
+
+    const rec = await prisma.recipient.create({
+      data: {
+        userId,
+        firstName: row.firstName,
+        lastName: row.lastName,
+        audience: "client",
+        email: row.email,
+        company: row.company,
+        address1: row.address1 ?? "",
+        city: row.city ?? "",
+        state: row.state ?? "",
+        zip: row.zip ?? "",
+        country: "US",
+        tags: "imported",
+        importantDates: {
+          create: row.importantDates.map((d) => ({ occasion: d.occasion, date: d.date, label: d.label })),
+        },
+      },
+      include: { importantDates: true },
+    });
+    byName.set(key(rec.firstName, rec.lastName), rec);
+    created++;
+    datesAdded += row.importantDates.length;
+  }
+  return { created, merged, datesAdded };
+}
+
 // ---- Automations ----------------------------------------------------------
 function toAutomation(a: {
   id: string;

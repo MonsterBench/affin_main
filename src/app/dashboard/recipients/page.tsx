@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { AddRecipientButton } from "@/components/dashboard/AddRecipientButton";
+import { ImportRecipientsButton } from "@/components/dashboard/ImportRecipientsButton";
 import { OccasionBadge, Tag } from "@/components/ui/Badge";
 import { requireUserId } from "@/lib/auth";
 import { initials, shortDate } from "@/lib/format";
@@ -20,7 +21,12 @@ export default async function RecipientsPage() {
       <PageHeader
         title="Recipients"
         subtitle={`${recipients.length} people on your thoughtfulness list`}
-        action={<AddRecipientButton />}
+        action={
+          <div className="flex items-center gap-2">
+            <ImportRecipientsButton />
+            <AddRecipientButton />
+          </div>
+        }
       />
 
       <div className="overflow-hidden rounded-2xl border border-pine-100 bg-white shadow-card">
