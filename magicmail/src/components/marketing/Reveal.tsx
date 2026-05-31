@@ -19,7 +19,8 @@ export function Reveal({
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    if (typeof IntersectionObserver === "undefined") {
+    // Escape hatch (?noanim) + no-IO fallback: reveal immediately.
+    if (typeof IntersectionObserver === "undefined" || new URLSearchParams(window.location.search).has("noanim")) {
       el.classList.add("is-visible");
       return;
     }
