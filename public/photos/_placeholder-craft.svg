@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900" role="img" aria-label="Craft photo placeholder">
+  <rect width="1200" height="900" rx="28" fill="#f4ead2"/>
+  <rect x="36" y="36" width="1128" height="828" rx="20" fill="none" stroke="#a5821c" stroke-opacity="0.45" stroke-width="2" stroke-dasharray="10 12"/>
+  <g transform="translate(600 380)" fill="none" stroke="#9e2b25" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M-70 70 L70 -70 a20 20 0 0 1 28 28 L-42 98 l-44 12 z"/>
+    <path d="M44 -44 l28 28"/>
+  </g>
+  <text x="600" y="560" text-anchor="middle" font-family="Georgia, serif" font-size="44" fill="#18432b" font-weight="700">Letter being hand-penned</text>
+  <text x="600" y="612" text-anchor="middle" font-family="system-ui, sans-serif" font-size="26" fill="#a5821c">/photos/craft.jpg · close-up of ink &amp; paper</text>
+</svg>

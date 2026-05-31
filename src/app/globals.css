@@ -94,3 +94,86 @@ body {
 .hairline {
   border-color: color-mix(in srgb, var(--color-pine-900) 12%, transparent);
 }
+
+/* ----------------------------------------------------------------------------
+   Motion & depth primitives (2026 landing-page polish)
+   Soft mesh glows for depth, gentle float for hero objects, scroll-reveal,
+   and a glass surface. All gated behind prefers-reduced-motion.
+---------------------------------------------------------------------------- */
+
+/* Frosted-glass surface for the sticky nav and floating chips. */
+.glass {
+  background: color-mix(in srgb, var(--color-cream) 10%, transparent);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+}
+.glass-light {
+  background: color-mix(in srgb, white 72%, transparent);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+}
+
+/* Layered radial "aurora" glows that add depth behind the hero. */
+.aurora::before,
+.aurora::after {
+  content: "";
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(70px);
+  opacity: 0.5;
+  pointer-events: none;
+}
+.aurora::before {
+  width: 38rem;
+  height: 38rem;
+  top: -10rem;
+  right: -8rem;
+  background: radial-gradient(circle, rgba(224, 189, 108, 0.55), transparent 70%);
+}
+.aurora::after {
+  width: 32rem;
+  height: 32rem;
+  bottom: -12rem;
+  left: -6rem;
+  background: radial-gradient(circle, rgba(70, 137, 95, 0.5), transparent 70%);
+}
+
+/* Scroll-reveal: hidden until the Reveal component adds .is-visible. */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes float-y {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+  }
+  @keyframes float-y-tilt {
+    0%, 100% { transform: translateY(0) rotate(var(--tilt, 0deg)); }
+    50% { transform: translateY(-10px) rotate(var(--tilt, 0deg)); }
+  }
+  @keyframes snow-fall {
+    0% { transform: translateY(-10%) translateX(0); opacity: 0; }
+    10% { opacity: 1; }
+    100% { transform: translateY(110vh) translateX(12px); opacity: 0.9; }
+  }
+  .animate-float { animation: float-y 6s ease-in-out infinite; }
+  .animate-float-tilt { animation: float-y-tilt 7s ease-in-out infinite; }
+  .snow-dot { animation: snow-fall linear infinite; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .reveal { opacity: 1; transform: none; }
+  .snow-dot { display: none; }
+}
