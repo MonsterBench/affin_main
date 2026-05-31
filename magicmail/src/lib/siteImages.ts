@@ -2,30 +2,29 @@
 // Central image manifest. Every photo/logo on the marketing site is referenced
 // from here, so swapping placeholders for real artwork is a one-line change.
 //
-// To use your own photo:
-//   1. Drop the file in  magicmail/public/photos/  (e.g. hero.jpg)
-//   2. Point the value below at it, e.g.  hero: "/photos/hero.jpg"
-//
-// Until then, on-brand placeholders render so nothing looks broken. See
-// magicmail/ASSETS.md for the recommended subject, dimensions, free sources
-// (Unsplash / Pexels / Pixabay), and which logo variant goes where.
+// To use a photo: drop the file in magicmail/public/photos/ and point the slot
+// below at it, e.g.  hero: "/photos/hero.jpg". On-brand placeholders render
+// until then. See magicmail/ASSETS.md for the subject + which photo goes where.
 // ----------------------------------------------------------------------------
 
 export const PHOTOS = {
-  // Hero — a child writing/reading a letter by the tree, warm candle light.
+  // Hero — Santa hand-penning a "Dear Emma" letter by lantern light.
   hero: "/photos/_placeholder-hero.svg",
-  // Wide band behind the "all year round" section — cozy, snowy, quiet.
-  occasions: "/photos/_placeholder-occasions.svg",
-  // Close-up of a letter being hand-penned in ink (the "real ink" proof).
-  craft: "/photos/_placeholder-craft.svg",
+  // "For Families" card — a mom and kids delighted by a letter.
+  families: "/photos/_placeholder-families.svg",
+  // "For Businesses" card — a person writing a note at a cozy desk.
+  business: "/photos/_placeholder-business.svg",
+  // "Magic Mail Club" card + gift collection — the red North Pole gift box.
+  giftbox: "/photos/_placeholder-giftbox.svg",
+  // "How it works" detail — addressed envelope + Nice List certificate.
+  keepsake: "/photos/_placeholder-keepsake.svg",
 } as const;
 
 // Brand logo variants. Drop the PNGs (transparent background) in
-// magicmail/public/brand/. If a file is missing, the Logo component falls back
-// to a crafted badge so the header never shows a broken image.
+// magicmail/public/brand/. Missing files fall back to a crafted badge.
 //   - icon:       red wax-seal "KK" — used in the dark nav (reads on any bg)
 //   - horizontal: envelope + wordmark — compact lockup
-//   - primary:    envelope + stacked wordmark — used in the (light) footer
+//   - primary:    envelope + stacked wordmark — used on light backgrounds
 //   - stamp:      circular postal stamp — decorative / keepsake accent
 export const LOGOS = {
   icon: "/brand/logo-icon.png",

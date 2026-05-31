@@ -35,9 +35,15 @@ to `"/photos/hero.jpg"`).
 
 | Slot | Suggested file | Subject | Size (approx) |
 |------|----------------|---------|----------------|
-| `hero` | `hero.jpg` | A child writing / reading a letter by the tree, warm candlelight | 1000×1200 (5:6 portrait) |
-| `occasions` | `occasions.jpg` | Cozy, snowy, quiet winter scene (used as a darkened band) | 1600×900 (16:9) |
-| `craft` | `craft.jpg` | Close-up of a letter being hand-penned in ink | 1200×900 (4:3) |
+| `hero` | `hero.jpg` | Santa hand-penning a "Dear Emma" letter by lantern light | 1200×900 (4:3) |
+| `families` | `families.jpg` | A mom and kids delighted by a letter from Santa | 1200×900 |
+| `business` | `business.jpg` | A person writing a handwritten note at a cozy desk | 1200×900 |
+| `giftbox` | `giftbox.jpg` | The red North Pole gift box with letter + treats | 1200×1000 |
+| `keepsake` | `keepsake.jpg` | Addressed envelope beside an official Nice List certificate (wide) | 1680×720 (21:9) |
+
+> The four photos you shared map directly: Santa-writing → `hero`, mom+kids → `families`,
+> man-at-desk → `business`, red gift box → `giftbox`. The `keepsake` (envelope + certificate)
+> slot still needs a photo.
 
 ### Free, commercially-usable sources
 Search these for the subjects above (all allow commercial use; check each
