@@ -24,6 +24,9 @@ model User {
   resetTokenExpiry     DateTime?
   apiKey               String?      @unique // for CRM / Zapier inbound webhooks
   fubApiKey            String? // Follow Up Boss API key (to fetch resource details)
+  googleRefreshToken   String? // Google Calendar OAuth refresh token (daily sync)
+  googleEmail          String? // the connected Google account
+  googleSyncedAt       DateTime?
   createdAt            DateTime     @default(now())
   recipients           Recipient[]
   automations          Automation[]
