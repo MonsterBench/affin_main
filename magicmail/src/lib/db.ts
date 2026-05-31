@@ -853,6 +853,7 @@ export interface GuestOrderInput {
   country?: string;
   note: string;
   styleId?: string;
+  addons?: string; // comma-joined add-on labels, for fulfillment
 }
 
 // Creates a one-off consumer gift order (e.g. a parent buying a single Santa
@@ -902,7 +903,9 @@ export async function createGuestOrder(input: GuestOrderInput): Promise<{ sendId
       status: "scheduled",
       scheduledFor: addDays(new Date().toISOString().slice(0, 10), 2),
       note: input.note,
-      reason: `One-off gift purchased by ${input.buyerEmail}`,
+      reason: input.addons
+        ? `One-off gift purchased by ${input.buyerEmail} · Add-ons: ${input.addons}`
+        : `One-off gift purchased by ${input.buyerEmail}`,
       source: "storefront",
       styleId: input.styleId,
       magicToken,
