@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900" role="img" aria-label="Writing a handwritten note at a desk">
+  <defs>
+    <radialGradient id="bb" cx="55%" cy="40%" r="78%"><stop offset="0" stop-color="#2f3a2c"/><stop offset="100%" stop-color="#141a13"/></radialGradient>
+    <radialGradient id="bg2" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ffd98a" stop-opacity="0.7"/><stop offset="100%" stop-color="#ffd98a" stop-opacity="0"/></radialGradient>
+    <linearGradient id="bp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fbf4e2"/><stop offset="1" stop-color="#ecdebd"/></linearGradient>
+  </defs>
+  <rect width="1200" height="900" fill="url(#bb)"/>
+  <circle cx="220" cy="170" r="60" fill="url(#bg2)"/><circle cx="980" cy="160" r="70" fill="url(#bg2)"/>
+  <!-- desk surface -->
+  <rect x="0" y="600" width="1200" height="300" fill="#3a2a1a"/>
+  <rect x="0" y="600" width="1200" height="14" fill="#4a3623"/>
+  <!-- note card -->
+  <g transform="rotate(-3 560 640)">
+    <rect x="360" y="520" width="400" height="280" rx="10" fill="url(#bp)" stroke="#c9b489" stroke-width="2"/>
+    <g stroke="#5a4632" stroke-width="5" stroke-linecap="round" opacity="0.5"><line x1="400" y1="580" x2="700" y2="580"/><line x1="400" y1="620" x2="680" y2="620"/><line x1="400" y1="660" x2="700" y2="660"/><line x1="400" y1="700" x2="600" y2="700"/></g>
+    <g fill="#2c6b45"><circle cx="690" cy="760" r="6"/><circle cx="702" cy="766" r="6"/><circle cx="696" cy="776" r="6"/></g>
+  </g>
+  <!-- coffee mug -->
+  <g transform="translate(150 640)"><rect x="0" y="20" width="110" height="90" rx="14" fill="#7a8a80"/><path d="M110 40 a26 26 0 0 1 0 52" fill="none" stroke="#7a8a80" stroke-width="14"/><ellipse cx="55" cy="22" rx="55" ry="14" fill="#3a2a1a"/></g>
+  <!-- fountain pen -->
+  <g transform="rotate(38 720 560)"><rect x="700" y="360" width="26" height="230" rx="10" fill="#1c130c"/><rect x="700" y="360" width="26" height="60" rx="10" fill="#c9a23a"/><path d="M700 590 L713 630 L726 590 Z" fill="#c9a23a"/></g>
+</svg>

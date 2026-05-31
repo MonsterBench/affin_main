@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1680" height="720" viewBox="0 0 1680 720" role="img" aria-label="Keepsake envelope and Nice List certificate">
+  <defs>
+    <radialGradient id="kb" cx="50%" cy="45%" r="75%"><stop offset="0" stop-color="#241712"/><stop offset="100%" stop-color="#140c09"/></radialGradient>
+    <radialGradient id="kg" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ffd98a" stop-opacity="0.8"/><stop offset="100%" stop-color="#ffd98a" stop-opacity="0"/></radialGradient>
+    <linearGradient id="kp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fbf4e2"/><stop offset="1" stop-color="#ecdebd"/></linearGradient>
+  </defs>
+  <rect width="1680" height="720" fill="url(#kb)"/>
+  <circle cx="240" cy="150" r="70" fill="url(#kg)"/><circle cx="1440" cy="180" r="80" fill="url(#kg)"/><circle cx="1500" cy="560" r="55" fill="url(#kg)"/>
+  <!-- kraft envelope -->
+  <g transform="rotate(-5 520 380)">
+    <rect x="250" y="250" width="540" height="330" rx="12" fill="#cda06a" stroke="#a9824f" stroke-width="3"/>
+    <path d="M250 262 L520 430 L790 262" fill="none" stroke="#a9824f" stroke-width="3"/>
+    <!-- North Pole round stamp -->
+    <circle cx="330" cy="330" r="42" fill="none" stroke="#3a2a1a" stroke-width="3"/>
+    <circle cx="330" cy="330" r="32" fill="none" stroke="#3a2a1a" stroke-width="1.5"/>
+    <text x="330" y="326" text-anchor="middle" font-family="Georgia, serif" font-size="14" font-weight="700" fill="#3a2a1a">NORTH</text>
+    <text x="330" y="344" text-anchor="middle" font-family="Georgia, serif" font-size="14" font-weight="700" fill="#3a2a1a">POLE</text>
+    <!-- snowflake stamp -->
+    <rect x="690" y="288" width="64" height="64" rx="6" fill="#9e2b25"/>
+    <g stroke="#fff" stroke-width="3" stroke-linecap="round"><line x1="722" y1="300" x2="722" y2="340"/><line x1="702" y1="320" x2="742" y2="320"/><line x1="708" y1="306" x2="736" y2="334"/><line x1="736" y1="306" x2="708" y2="334"/></g>
+    <text x="430" y="520" font-family="Georgia, serif" font-size="22" fill="#3a2a1a">To: The Anderson Family</text>
+  </g>
+  <!-- certificate -->
+  <g transform="rotate(4 1140 380)">
+    <rect x="900" y="180" width="500" height="400" rx="10" fill="url(#kp)" stroke="#c9a23a" stroke-width="3"/>
+    <rect x="922" y="202" width="456" height="356" rx="6" fill="none" stroke="#c9a23a" stroke-width="2"/>
+    <text x="1150" y="262" text-anchor="middle" font-family="Georgia, serif" font-size="34" font-weight="700" fill="#9e2b25">Nice List</text>
+    <text x="1150" y="300" text-anchor="middle" font-family="Georgia, serif" font-size="18" fill="#2c6b45">Official Certificate</text>
+    <g stroke="#5a4632" stroke-width="4" stroke-linecap="round" opacity="0.45"><line x1="970" y1="345" x2="1330" y2="345"/><line x1="990" y1="380" x2="1310" y2="380"/><line x1="1010" y1="415" x2="1290" y2="415"/></g>
+    <text x="1150" y="490" text-anchor="middle" font-family="Georgia, serif" font-size="20" font-style="italic" fill="#9e2b25">Love, Santa</text>
+    <circle cx="1320" cy="510" r="26" fill="#9e2b25"/><text x="1320" y="518" text-anchor="middle" font-family="Georgia, serif" font-size="20" font-weight="700" fill="#f4d7a1">K</text>
+  </g>
+</svg>

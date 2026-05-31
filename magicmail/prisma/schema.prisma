@@ -1,0 +1,154 @@
+// Kringle data model. SQLite for the MVP; the schema is written to be
+// Postgres-compatible so it can graduate by swapping the datasource provider.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id                   String       @id @default(cuid())
+  email                String       @unique
+  name                 String
+  passwordHash         String
+  plan                 String       @default("free") // free | pro | business
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  emailVerified        Boolean      @default(false)
+  verifyToken          String?      @unique
+  resetToken           String?      @unique
+  resetTokenExpiry     DateTime?
+  apiKey               String?      @unique // for CRM / Zapier inbound webhooks
+  fubApiKey            String? // Follow Up Boss API key (to fetch resource details)
+  googleRefreshToken   String? // Google Calendar OAuth refresh token (daily sync)
+  googleEmail          String? // the connected Google account
+  googleSyncedAt       DateTime?
+  createdAt            DateTime     @default(now())
+  recipients           Recipient[]
+  automations          Automation[]
+  sends                Send[]
+  integrationEvents    IntegrationEvent[]
+}
+
+model IntegrationEvent {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  source       String // zapier | follow-up-boss | api
+  event        String // occasion / event name
+  summary      String
+  sendsCreated Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Recipient {
+  id             String          @id @default(cuid())
+  userId         String
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName      String
+  lastName       String
+  audience       String // client | employee | family | kid | prospect
+  company        String?
+  email          String?
+  address1       String          @default("") // street address for fulfillment
+  address2       String          @default("")
+  city           String          @default("")
+  state          String          @default("")
+  zip            String          @default("")
+  country        String          @default("US")
+  tags           String          @default("") // comma-separated
+  notes          String?
+  createdAt      DateTime        @default(now())
+  importantDates ImportantDate[]
+  sends          Send[]
+
+  @@index([userId])
+}
+
+model ImportantDate {
+  id          String    @id @default(cuid())
+  recipientId String
+  recipient   Recipient @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  occasion    String
+  date        String // ISO yyyy-mm-dd; year ignored for recurring
+  label       String?
+
+  @@index([recipientId])
+}
+
+model Automation {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  triggerOccasion String
+  giftId          String
+  leadTimeDays    Int      @default(5)
+  audienceFilter  String   @default("all")
+  tagFilter       String?
+  cadence         String   @default("one_time") // one_time | monthly | quarterly | annually
+  active          Boolean  @default(true)
+  noteTemplate    String   @default("")
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Send {
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipientId    String
+  recipient      Recipient @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  giftId         String
+  occasion       String
+  status         String    @default("scheduled") // scheduled|paused|skipped|handwriting|assembling|shipped|delivered
+  scheduledFor   String // ISO yyyy-mm-dd
+  deliveredOn    String?
+  trackingNumber String?
+  note           String    @default("")
+  reason         String? // why this gift was selected (shown in the touch preview)
+  notifiedAt     DateTime? // when the pre-send heads-up email went out
+  source         String    @default("app") // app | crm | storefront
+  magicToken     String?   @unique // powers the QR "magic" experience page
+  videoStatus    String    @default("none") // none | requested | ready | failed
+  videoUrl       String?
+  styleId         String? // chosen letter style/stationery preset
+  fulfillProvider String? // handwrytten | axidraw | manual — who is making it
+  fulfillJobId    String? // provider's order/job id, for tracking
+  fulfillStatus   String? // provider status: queued|submitted|writing|mailed|failed
+  dispatchedAt    DateTime? // when it was handed to the provider
+  automationId    String?
+  createdAt       DateTime  @default(now())
+  reactions       Reaction[]
+
+  @@index([userId])
+  @@index([recipientId])
+}
+
+model WaitlistEntry {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  source    String?
+  createdAt DateTime @default(now())
+}
+
+// A reaction left by the recipient on the QR keepsake page, flowing back to
+// the sender. Closes the emotional loop and drives organic growth.
+model Reaction {
+  id         String   @id @default(cuid())
+  sendId     String
+  send       Send     @relation(fields: [sendId], references: [id], onDelete: Cascade)
+  emoji      String? // a quick reaction
+  message    String? // optional thank-you note
+  fromName   String? // who left it (e.g. the parent)
+  createdAt  DateTime @default(now())
+
+  @@index([sendId])
+}
