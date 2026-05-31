@@ -92,3 +92,33 @@ export function QrIcon({ className = base }: IconProps) {
     </svg>
   );
 }
+
+export function CpuIcon({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <rect x="6" y="6" width="12" height="12" rx="2" />
+      <rect x="9.5" y="9.5" width="5" height="5" rx="1" />
+      <path d="M9 3v2M15 3v2M9 19v2M15 19v2M3 9h2M3 15h2M19 9h2M19 15h2" />
+    </svg>
+  );
+}
+
+export function BoxIcon({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="m3.3 7 8.7 4.5L20.7 7" />
+      <path d="M12 11.5V21" />
+      <path d="M20.5 7.3 12 3 3.5 7.3v9.4L12 21l8.5-4.3Z" />
+    </svg>
+  );
+}
+
+export function TruckIcon({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M2 6h11v9H2zM13 9h4l4 3v3h-8z" />
+      <circle cx="6" cy="18" r="1.8" />
+      <circle cx="17" cy="18" r="1.8" />
+    </svg>
+  );
+}
