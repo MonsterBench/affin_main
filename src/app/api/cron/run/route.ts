@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { runScheduler } from "@/lib/scheduler";
 import { pollFulfillmentStatuses } from "@/lib/db";
+import { syncAllGoogle } from "@/lib/googleSync";
 
 // Cron entrypoint — point a scheduler (e.g. Vercel Cron, daily) at this route.
 // Protected by CRON_SECRET when set. Runs the auto-send engine for all accounts.
@@ -21,5 +22,6 @@ async function handle(req: Request) {
   }
   const summary = await runScheduler();
   const polled = await pollFulfillmentStatuses();
-  return NextResponse.json({ ok: true, ...summary, polled });
+  const googleSync = await syncAllGoogle();
+  return NextResponse.json({ ok: true, ...summary, polled, googleSync });
 }

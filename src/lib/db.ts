@@ -601,6 +601,53 @@ export async function getFubApiKey(userId: string): Promise<string | null> {
   return u?.fubApiKey ?? null;
 }
 
+// ---- Google Calendar connection -------------------------------------------
+export async function setGoogleTokens(
+  userId: string,
+  refreshToken: string,
+  email?: string,
+): Promise<void> {
+  await prisma.user.update({
+    where: { id: userId },
+    data: { googleRefreshToken: refreshToken, googleEmail: email ?? null },
+  });
+}
+
+export async function disconnectGoogle(userId: string): Promise<void> {
+  await prisma.user.update({
+    where: { id: userId },
+    data: { googleRefreshToken: null, googleEmail: null, googleSyncedAt: null },
+  });
+}
+
+export interface GoogleConnection {
+  connected: boolean;
+  email?: string;
+  syncedAt?: string;
+}
+
+export async function getGoogleConnection(userId: string): Promise<GoogleConnection> {
+  const u = await prisma.user.findUnique({ where: { id: userId } });
+  return {
+    connected: Boolean(u?.googleRefreshToken),
+    email: u?.googleEmail ?? undefined,
+    syncedAt: u?.googleSyncedAt ? u.googleSyncedAt.toISOString() : undefined,
+  };
+}
+
+// Users with a Google connection (for the daily cron sync).
+export async function usersWithGoogle(): Promise<{ id: string; googleRefreshToken: string }[]> {
+  const rows = await prisma.user.findMany({
+    where: { googleRefreshToken: { not: null } },
+    select: { id: true, googleRefreshToken: true },
+  });
+  return rows.flatMap((r) => (r.googleRefreshToken ? [{ id: r.id, googleRefreshToken: r.googleRefreshToken }] : []));
+}
+
+export async function markGoogleSynced(userId: string): Promise<void> {
+  await prisma.user.update({ where: { id: userId }, data: { googleSyncedAt: new Date() } });
+}
+
 // ---- Integration activity log --------------------------------------------
 export async function logIntegrationEvent(
   userId: string,
